@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <mcp2515.h>
+#include <chrono>
 
 struct can_frame canMsg;
 
@@ -12,6 +13,8 @@ uint16_t pot2 = 0;
 uint8_t led = 0;
 
 MCP2515 mcp2515;
+
+uint32_t faultTime;
 
 
 void setup(){
@@ -30,12 +33,21 @@ void setup(){
 }
 
 // FAULT BOARD
-void loop(){
-  if(((float) abs(pot1 - pot2)) / max(pot1, pot2) > 0.1){
+void loop() {
+  // Serial.println(curTime - faultTime);
+  // Serial.println(curTime);
+  if (millis() - faultTime >= 3000){
     led = 0;
   }
-  else{
+  else {
     led = 1;
+  }
+
+  if (((float) abs(pot1 - pot2)) / max(pot1, pot2) <= 0.1){
+    faultTime = millis();
+  }
+  else {
+    Serial.println("Fault");
   }
 
   if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
