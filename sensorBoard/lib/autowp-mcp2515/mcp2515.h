@@ -90,17 +90,13 @@
 #define MCP_16MHz_100kBPS_CFG2 (0xFA)
 #define MCP_16MHz_100kBPS_CFG3 (0x87)
 
-#define MCP_16MHz_95kBPS_CFG1 (0x03)
-#define MCP_16MHz_95kBPS_CFG2 (0xAD)
-#define MCP_16MHz_95kBPS_CFG3 (0x07)
+#define MCP_16MHz_80kBPS_CFG1 (0x03)
+#define MCP_16MHz_80kBPS_CFG2 (0xFF)
+#define MCP_16MHz_80kBPS_CFG3 (0x87)
 
 #define MCP_16MHz_83k3BPS_CFG1 (0x03)
 #define MCP_16MHz_83k3BPS_CFG2 (0xBE)
 #define MCP_16MHz_83k3BPS_CFG3 (0x07)
-
-#define MCP_16MHz_80kBPS_CFG1 (0x03)
-#define MCP_16MHz_80kBPS_CFG2 (0xFF)
-#define MCP_16MHz_80kBPS_CFG3 (0x87)
 
 #define MCP_16MHz_50kBPS_CFG1 (0x07)
 #define MCP_16MHz_50kBPS_CFG2 (0xFA)
@@ -428,7 +424,7 @@ class MCP2515
             MCP_RXB1DATA = 0x76
         };
 
-        static const uint32_t DEFAULT_SPI_CLOCK = 10000000; // 10MHz
+        static const uint32_t SPI_CLOCK = 10000000; // 10MHz
 
         static const int N_TXBUFFERS = 3;
         static const int N_RXBUFFERS = 2;
@@ -447,8 +443,6 @@ class MCP2515
         } RXB[N_RXBUFFERS];
 
         uint8_t SPICS;
-        uint32_t SPI_CLOCK;
-        SPIClass * SPIn;
 
     private:
 
@@ -474,7 +468,7 @@ class MCP2515
             pinMode(SPICS, OUTPUT);
             endSPI();
         };
-        MCP2515(const uint8_t _CS, const uint32_t _SPI_CLOCK = DEFAULT_SPI_CLOCK, SPIClass * _SPI = nullptr);
+        MCP2515(const uint8_t _CS);
         ERROR reset(void);
         ERROR setConfigMode();
         ERROR setListenOnlyMode();
