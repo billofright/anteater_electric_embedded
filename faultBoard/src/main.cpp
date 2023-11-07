@@ -5,6 +5,8 @@
 
 struct can_frame canMsg;
 
+const uint16_t POT_MAX = 1023;
+
 uint8_t ledPin = 3;
 
 uint16_t pot1 = 0;
@@ -41,7 +43,7 @@ void loop() {
     led = 1;
   }
 
-  if (((float) abs(pot1 - pot2)) / max(pot1, pot2) <= 0.1){
+  if ((((float) pot1)/POT_MAX < 0.05 || ((float) pot2)/POT_MAX < 0.05) || ((float) abs(pot1 - pot2)) / max(pot1, pot2) <= 0.1){
     faultTime = millis();
   }
 
