@@ -36,7 +36,7 @@ void setup(){
 void loop() {
   // Serial.println(curTime - faultTime);
   // Serial.println(curTime);
-  if (millis() - faultTime >= 3000){
+  if (millis() - faultTime >= 100){
     led = 0;
   }
   else {
