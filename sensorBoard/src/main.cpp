@@ -67,6 +67,6 @@ void send(void *pvParameters) {
     canMsg.data[7] = 0x08;
   
     mcp2515.sendMessage(&canMsg); // Sends the CAN message
-    delay(100);
+    delay(10);
   }
 }

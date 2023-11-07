@@ -34,9 +34,7 @@ void setup(){
 
 // FAULT BOARD
 void loop() {
-  // Serial.println(curTime - faultTime);
-  // Serial.println(curTime);
-  if (millis() - faultTime >= 100){
+  if (millis() - faultTime >= 3000){
     led = 0;
   }
   else {
@@ -45,9 +43,6 @@ void loop() {
 
   if (((float) abs(pot1 - pot2)) / max(pot1, pot2) <= 0.1){
     faultTime = millis();
-  }
-  else {
-    Serial.println("Fault");
   }
 
   if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
