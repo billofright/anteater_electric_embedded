@@ -42,7 +42,7 @@ uint8_t CURR_STATE = IDLE;
 
 static THD_WORKING_AREA(waThread1, 64);
 
-static THD_FUNCTION(Thread1, arg) {
+static THD_FUNCTION(throttleCheck, arg) {
   (void)arg;
   while(true) {
     chMtxLock(&stateMutex);
@@ -50,7 +50,9 @@ static THD_FUNCTION(Thread1, arg) {
     {
       MC = 0;
       throttleOut = 0;
-      CURR_STATE = FAULT;
+      if(CURR_STATE != FAULT) {
+        CURR_STATE = FAULT;
+      }
     }
     else
     {
@@ -67,7 +69,7 @@ static THD_FUNCTION(Thread1, arg) {
 
 static THD_WORKING_AREA(waThread2, 64);
 
-static THD_FUNCTION(Thread2, arg) {
+static THD_FUNCTION(brakeCheck, arg) {
   (void)arg;
   while (true) {
     chMtxLock(&stateMutex);
@@ -75,16 +77,11 @@ static THD_FUNCTION(Thread2, arg) {
       MC = 1;
     else {
       MC = 0;
-      CURR_STATE = FAULT;
+      if(CURR_STATE != FAULT) {
+        CURR_STATE = FAULT;
+      }
     }
     chMtxUnlock(&stateMutex);
-    if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
-    {
-      throttle1 = (uint16_t)canMsg.data[0] << 8 | canMsg.data[1];
-      throttle2 = (uint16_t)canMsg.data[2] << 8 | canMsg.data[3];
-      brake = (uint16_t)canMsg.data[4] << 8 | canMsg.data[5];
-      Serial.println("throttle1: " + String(throttle1) + " throttle2: " + String(throttle2) + " Brake: " + String(brake) + " MC: " + String(MC) + " Throttle: " + String(throttleOut) + " brake value: " + String(map_value(5, POT_MAX, 4.5)));
-    }
   }
 }
 
@@ -114,7 +111,22 @@ static THD_FUNCTION(rtd, arg) {
 
 static THD_WORKING_AREA(waThread4, 64);
 
-static THD_FUNCTION(Thread4, arg) {
+static THD_FUNCTION(read, arg) {
+  (void)arg;
+  while (true) {
+    if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
+    {
+      throttle1 = (uint16_t)canMsg.data[0] << 8 | canMsg.data[1];
+      throttle2 = (uint16_t)canMsg.data[2] << 8 | canMsg.data[3];
+      brake = (uint16_t)canMsg.data[4] << 8 | canMsg.data[5];
+      Serial.println("throttle1: " + String(throttle1) + " throttle2: " + String(throttle2) + " Brake: " + String(brake) + " MC: " + String(MC) + " Throttle: " + String(throttleOut) + " brake value: " + String(map_value(5, POT_MAX, 4.5)));
+    }
+  }
+}
+
+static THD_WORKING_AREA(waThread5, 64);
+
+static THD_FUNCTION(write, arg) {
   (void)arg;
   while (true) {
     digitalWrite(MCPin, MC);
@@ -131,16 +143,19 @@ float map_value(uint16_t aMax, uint16_t bMax, float inValue)
 void chSetup() {
   // Start threads.
   chThdCreateStatic(waThread1, sizeof(waThread1),
-    NORMALPRIO, Thread1, NULL);
+    NORMALPRIO, throttleCheck, NULL);
 
   chThdCreateStatic(waThread2, sizeof(waThread2),
-    NORMALPRIO, Thread2, NULL);
+    NORMALPRIO, brakeCheck, NULL);
   
   chThdCreateStatic(waThread3, sizeof(waThread3),
     NORMALPRIO, rtd, NULL);
 
   chThdCreateStatic(waThread4, sizeof(waThread4),
-    NORMALPRIO, Thread4, NULL);
+    NORMALPRIO, read, NULL);
+
+  chThdCreateStatic(waThread5, sizeof(waThread5),
+    NORMALPRIO, write, NULL);
 
 }
 
