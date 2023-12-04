@@ -3,23 +3,42 @@
 #include <mcp2515.h>
 #include <ChRt.h>
 
+enum State
+{
+  IDLE,
+  TRACTIVE_SYSTEM_ACTIVE,
+  READY_TO_DRIVE,
+  DRIVING,
+  FAULT
+};
+
+MUTEX_DECL(stateMutex);
+
 struct can_frame canMsg;
 
 const uint16_t POT_MAX = 1023;
 
 uint8_t MCPin = 3;
 uint8_t throttlePin = A9;
+uint8_t keySwitchPin = 4;
+uint8_t tractiveSystemActivePin = 5;
 
 uint16_t throttle1 = 0;
 uint16_t throttle2 = 0;
 uint16_t brake = 0;
 
+float brake_low = 0.5;
+float brake_high = 4.5;
+
 uint8_t MC = 0;
+
 
 MCP2515 mcp2515;
 
 uint32_t faultTime = 0;
 uint8_t throttleOut = 0;
+
+uint8_t CURR_STATE = IDLE;
 
 static THD_WORKING_AREA(waThread1, 64);
 
@@ -67,15 +86,29 @@ static THD_FUNCTION(Thread2, arg) {
   }
 }
 
-// static THD_WORKING_AREA(waThread3, 64);
+static THD_WORKING_AREA(waThread3, 64);
 
-// static THD_FUNCTION(Thread3, arg) {
-//   (void)arg;
-//    while (true) {
-//     chThdSleepMilliseconds(100);
-//     Serial.println("Hello2");
-//   }
-// }
+static THD_FUNCTION(rtd, arg) {
+  (void)arg;
+  while (true) {
+    chMtxLock(&stateMutex);
+
+    if(CURR_STATE == TRACTIVE_SYSTEM_ACTIVE) {
+      if(brake > brake_low && brake < brake_high) {
+        CURR_STATE = READY_TO_DRIVE;
+        Serial.println("Ready to drive sound playing!");
+      }
+    }
+    else if(CURR_STATE == READY_TO_DRIVE) {
+      if(digitalRead(keySwitchPin) == HIGH) {
+        CURR_STATE = DRIVING;
+        Serial.println("Driving!");
+      }
+    }
+
+    chMtxUnlock(&stateMutex);
+  }
+}
 
 float map_value(uint16_t aMax, uint16_t bMax, float inValue)
 {
@@ -94,6 +127,9 @@ void chSetup() {
   // chThdCreateStatic(waThread3, sizeof(waThread3),
   //   NORMALPRIO, Thread3, NULL);
 
+  chThdCreateStatic(waThread3, sizeof(waThread3),
+    NORMALPRIO, rtd, NULL);
+
 }
 
 void setup()
@@ -110,6 +146,7 @@ void setup()
   pinMode(MCPin, OUTPUT);
   digitalWrite(MCPin, MC);
   pinMode(throttlePin, OUTPUT);
+  pinMode(keySwitchPin, INPUT_PULLDOWN);
 
   chBegin(chSetup);
 }
