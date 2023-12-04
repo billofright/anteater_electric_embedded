@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <mcp2515.h>
-#include <chrono>
 
 struct can_frame canMsg;
 
@@ -21,10 +20,10 @@ MCP2515 mcp2515;
 uint32_t faultTime = 0;
 uint8_t throttleOut = 0;
 
-float map_value(uint16_t aMax, uint16_t bMax, uint16_t inValue)
+float map_value(uint16_t aMax, uint16_t bMax, float inValue)
 {
   // maps value in range a to range b
-  return ((float)bMax / aMax) * (inValue + 0.5);
+  return ((float)bMax / aMax) * (inValue);
 }
 
 void setup()
