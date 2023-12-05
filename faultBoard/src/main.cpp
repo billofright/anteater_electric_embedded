@@ -22,6 +22,9 @@ uint8_t MCPin = 3;
 uint8_t throttlePin = A9;
 uint8_t keySwitchPin = 4;
 uint8_t tractiveSystemActivePin = 5;
+uint8_t buzzerPin = 4;
+
+
 
 uint16_t throttle1 = 0;
 uint16_t throttle2 = 0;
@@ -96,6 +99,7 @@ static THD_FUNCTION(rtd, arg) {
       if(brake > brake_low && brake < brake_high) {
         CURR_STATE = READY_TO_DRIVE;
         Serial.println("Ready to drive sound playing!");
+        tone(buzzerPin, 1000, 1000);
       }
     }
     else if(CURR_STATE == READY_TO_DRIVE) {
@@ -174,6 +178,7 @@ void setup()
   digitalWrite(MCPin, MC);
   pinMode(throttlePin, OUTPUT);
   pinMode(keySwitchPin, INPUT_PULLDOWN);
+  pinMode(buzzerPin, OUTPUT);
 
   chBegin(chSetup);
 }

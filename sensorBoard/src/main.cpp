@@ -8,6 +8,8 @@ struct can_frame canMsg;
 uint8_t throttle1Pin = A7;
 uint8_t throttle2Pin = A6;
 uint8_t brakePin = A5;
+uint8_t tsSwitchPin = 5;
+uint8_t keySwitchPin = 6;
 
 MCP2515 mcp2515;
 
@@ -15,10 +17,14 @@ void throttle1(void *pvParameters);
 void throttle2(void *pvParameters);
 void brake(void *pvParameters);
 void send(void *pvParameters);
+void ts(void *pvParameters);
+void key(void *pvParameters);
 
 uint16_t throttle1Value = 0;
 uint16_t throttle2Value = 0;
 uint16_t brakeValue = 0;
+uint8_t tsValue = 0;
+uint8_t keyValue = 0;
 
 void setup()
 {
@@ -35,10 +41,15 @@ void setup()
   xTaskCreate(throttle2, "Pot 2", 100, nullptr, 1, nullptr);
   xTaskCreate(brake, "Brake", 100, nullptr, 1, nullptr);
   xTaskCreate(send, "Send", 100, nullptr, 1, nullptr);
+  xTaskCreate(ts, "TS Switch", 100, nullptr, 1, nullptr);
+  xTaskCreate(key, "Key Switch", 100, nullptr, 1, nullptr);
   vTaskStartScheduler();
 
   pinMode(throttle1Pin, INPUT);
   pinMode(throttle2Pin, INPUT);
+  pinMode(tsSwitchPin, INPUT);
+  pinMode(keySwitchPin, INPUT);
+
 }
 
 void loop() {}
@@ -67,6 +78,22 @@ void brake(void *pvParameteres)
   }
 }
 
+void ts(void *pvParameteres)
+{
+  while (true)
+  {
+    tsValue = analogRead(tsSwitchPin);
+  }
+}
+
+void key(void *pvParameteres)
+{
+  while (true)
+  {
+    keyValue = analogRead(keySwitchPin);
+  }
+}
+
 void send(void *pvParameters)
 {
   while (true)
@@ -79,10 +106,15 @@ void send(void *pvParameters)
     canMsg.data[3] = throttle2Value & 0xFF;
     canMsg.data[4] = brakeValue >> 8;
     canMsg.data[5] = brakeValue & 0xFF;
-    canMsg.data[6] = 0x07;
-    canMsg.data[7] = 0x08;
+    canMsg.data[6] = tsValue;
+    canMsg.data[7] = keyValue;
 
     mcp2515.sendMessage(&canMsg); // Sends the CAN message
     delay(10);
+
+    Serial.print("tsValue: " );
+    Serial.println(tsValue);
+    Serial.print("keyValue: " );
+    Serial.println(keyValue);
   }
 }
