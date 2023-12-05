@@ -70,6 +70,12 @@ static THD_FUNCTION(throttleCheck, arg)
   }
 }
 
+float map_value(uint16_t aMax, uint16_t bMax, float inValue)
+{
+  // maps value in range a to range b
+  return ((float)bMax / aMax) * (inValue);
+}
+
 static THD_WORKING_AREA(waThread2, 64);
 
 static THD_FUNCTION(brakeCheck, arg)
@@ -164,11 +170,6 @@ static THD_FUNCTION(write, arg)
   }
 }
 
-float map_value(uint16_t aMax, uint16_t bMax, float inValue)
-{
-  // maps value in range a to range b
-  return ((float)bMax / aMax) * (inValue);
-}
 
 void chSetup()
 {

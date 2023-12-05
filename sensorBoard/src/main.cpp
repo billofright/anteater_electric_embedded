@@ -82,7 +82,7 @@ void ts(void *pvParameteres)
 {
   while (true)
   {
-    tsValue = analogRead(tsSwitchPin);
+    tsValue = digitalRead(tsSwitchPin);
   }
 }
 
@@ -90,7 +90,7 @@ void key(void *pvParameteres)
 {
   while (true)
   {
-    keyValue = analogRead(keySwitchPin);
+    keyValue = digitalRead(keySwitchPin);
   }
 }
 
