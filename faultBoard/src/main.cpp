@@ -101,11 +101,6 @@ static THD_FUNCTION(rtd, arg)
   (void)arg;
   while (true)
   {
-    // tone(buzzerPin, freq);
-    // freq += 500;
-
-    // Serial.println(freq);
-    // chThdSleepMilliseconds(10);
     chMtxLock(&stateMutex);
 
     if (CURR_STATE == IDLE)
@@ -122,12 +117,37 @@ static THD_FUNCTION(rtd, arg)
         CURR_STATE = READY_TO_DRIVE;
         tone(buzzerPin, 1000, 3000);
       }
+      else if (tractiveSystemActiveValue == 0)
+      {
+        CURR_STATE = IDLE;
+        tone(buzzerPin, 0);
+      }
     }
     else if (CURR_STATE == READY_TO_DRIVE)
     {
       if (keySwitchValue == 1)
       {
         CURR_STATE = DRIVING;
+      }
+      else if (tractiveSystemActiveValue == 0)
+      {
+        CURR_STATE = IDLE;
+        tone(buzzerPin, 0);
+      }
+      else if (map_value(POT_MAX, 5, brake) <= brake_low)
+      {
+        CURR_STATE = TRACTIVE_SYSTEM_ACTIVE;
+      }
+    }
+    else if (CURR_STATE == DRIVING)
+    {
+      if (tractiveSystemActiveValue == 0)
+      {
+        CURR_STATE = IDLE;
+      }
+      else if (keySwitchValue == 0)
+      {
+        CURR_STATE = READY_TO_DRIVE;
       }
     }
 
@@ -150,21 +170,11 @@ static THD_FUNCTION(read, arg)
       tractiveSystemActiveValue = canMsg.data[6];
       keySwitchValue = canMsg.data[7];
       Serial.print("throttle1: ");
-      Serial.print(throttle1);
-      Serial.print(" throttle2: ");
-      Serial.print(throttle2);
-      Serial.print(" Brake: ");
-      Serial.print(brake);
-      Serial.print(" brake value: ");
+      Serial.print(throttle1*100/POT_MAX);
+      Serial.print("% throttle2: ");
+      Serial.print(throttle2*100/POT_MAX);
+      Serial.print("% brake value: ");
       Serial.print(map_value(POT_MAX, 5, brake));
-      Serial.print(" MC: ");
-      Serial.print(MC);
-      Serial.print(" Throttle: ");
-      Serial.print(throttleOut);
-      Serial.print(" tractiveSystemActiveValue: ");
-      Serial.print(tractiveSystemActiveValue);
-      Serial.print(" keySwitchValue: ");
-      Serial.print(keySwitchValue);
       Serial.print(" current state: ");
       Serial.println(stateNames[CURR_STATE]);
     }
@@ -253,36 +263,4 @@ void setup()
 
 // FAULT BOARD
 void loop()
-{
-  // if (millis() - faultTime >= 100)
-  // {
-  //   MC = 0;
-  //   throttleOut = 0;
-  // }
-  // else
-  // {
-  //   MC = 1;
-  //   throttleOut = ((throttle1 + throttle2) / 2) / 4;
-  // }
-
-  // if (abs(throttle1 - throttle2) <= POT_MAX / 10)
-  // {
-  //   faultTime = millis();
-  // }
-
-  // if (brake > map_value(5, POT_MAX, 0.5) && brake < map_value(5, POT_MAX, 4.5))
-  //   MC = 1;
-  // else
-  //   MC = 0;
-
-  // if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
-  // {
-  //   throttle1 = (uint16_t)canMsg.data[0] << 8 | canMsg.data[1];
-  //   throttle2 = (uint16_t)canMsg.data[2] << 8 | canMsg.data[3];
-  //   brake = (uint16_t)canMsg.data[4] << 8 | canMsg.data[5];
-  //   Serial.println("throttle1: " + String(throttle1) + " throttle2: " + String(throttle2) + " Brake: " + String(brake) + " MC: " + String(MC) + " Throttle: " + String(throttleOut) + " brake value: " + String(map_value(5, POT_MAX, 4.5)));
-  // }
-
-  // digitalWrite(MCPin, MC);
-  // analogWrite(throttlePin, throttleOut);
-}
+{}
