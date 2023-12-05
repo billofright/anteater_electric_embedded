@@ -20,12 +20,10 @@ const uint16_t POT_MAX = 1023;
 
 uint8_t MCPin = 3;
 uint8_t throttlePin = A9;
-uint8_t keySwitchPin = 4;
-uint8_t tractiveSystemActivePin = 5;
 uint8_t buzzerPin = 4;
 
-
-
+uint8_t tractiveSystemActiveValue = 0;
+uint8_t keySwitchValue = 0;
 uint16_t throttle1 = 0;
 uint16_t throttle2 = 0;
 uint16_t brake = 0;
@@ -34,7 +32,6 @@ float brake_low = 0.5;
 float brake_high = 4.5;
 
 uint8_t MC = 0;
-
 
 MCP2515 mcp2515;
 
@@ -45,15 +42,18 @@ uint8_t CURR_STATE = IDLE;
 
 static THD_WORKING_AREA(waThread1, 64);
 
-static THD_FUNCTION(throttleCheck, arg) {
+static THD_FUNCTION(throttleCheck, arg)
+{
   (void)arg;
-  while(true) {
+  while (true)
+  {
     chMtxLock(&stateMutex);
     if (millis() - faultTime >= 100)
     {
       MC = 0;
       throttleOut = 0;
-      if(CURR_STATE != FAULT) {
+      if (CURR_STATE != FAULT)
+      {
         CURR_STATE = FAULT;
       }
     }
@@ -72,38 +72,58 @@ static THD_FUNCTION(throttleCheck, arg) {
 
 static THD_WORKING_AREA(waThread2, 64);
 
-static THD_FUNCTION(brakeCheck, arg) {
+static THD_FUNCTION(brakeCheck, arg)
+{
   (void)arg;
-  while (true) {
-    chMtxLock(&stateMutex);
+  while (true)
+  {
     if (brake > map_value(5, POT_MAX, 0.5) && brake < map_value(5, POT_MAX, 4.5))
+    {
       MC = 1;
-    else {
+    }
+    else
+    {
       MC = 0;
-      if(CURR_STATE != FAULT) {
+      chMtxLock(&stateMutex);
+      if (CURR_STATE != FAULT)
+      {
         CURR_STATE = FAULT;
       }
+      chMtxUnlock(&stateMutex);
     }
-    chMtxUnlock(&stateMutex);
   }
 }
 
 static THD_WORKING_AREA(waThread3, 64);
 
-static THD_FUNCTION(rtd, arg) {
+static THD_FUNCTION(rtd, arg)
+{
   (void)arg;
-  while (true) {
+  while (true)
+  {
     chMtxLock(&stateMutex);
 
-    if(CURR_STATE == TRACTIVE_SYSTEM_ACTIVE) {
-      if(brake > brake_low && brake < brake_high) {
+    if (CURR_STATE == IDLE)
+    {
+      if (tractiveSystemActiveValue == 1)
+      {
+        CURR_STATE = TRACTIVE_SYSTEM_ACTIVE;
+        Serial.println("Tractive system active!");
+      }
+    }
+    else if (CURR_STATE == TRACTIVE_SYSTEM_ACTIVE)
+    {
+      if (brake > brake_low && brake < brake_high)
+      {
         CURR_STATE = READY_TO_DRIVE;
         Serial.println("Ready to drive sound playing!");
         tone(buzzerPin, 1000, 1000);
       }
     }
-    else if(CURR_STATE == READY_TO_DRIVE) {
-      if(digitalRead(keySwitchPin) == HIGH) {
+    else if (CURR_STATE == READY_TO_DRIVE)
+    {
+      if (keySwitchValue == 1)
+      {
         CURR_STATE = DRIVING;
         Serial.println("Driving!");
       }
@@ -115,14 +135,18 @@ static THD_FUNCTION(rtd, arg) {
 
 static THD_WORKING_AREA(waThread4, 64);
 
-static THD_FUNCTION(read, arg) {
+static THD_FUNCTION(read, arg)
+{
   (void)arg;
-  while (true) {
+  while (true)
+  {
     if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
     {
       throttle1 = (uint16_t)canMsg.data[0] << 8 | canMsg.data[1];
       throttle2 = (uint16_t)canMsg.data[2] << 8 | canMsg.data[3];
       brake = (uint16_t)canMsg.data[4] << 8 | canMsg.data[5];
+      tractiveSystemActiveValue = (uint16_t)canMsg.data[6];
+      keySwitchValue = (uint16_t)canMsg.data[7];
       Serial.println("throttle1: " + String(throttle1) + " throttle2: " + String(throttle2) + " Brake: " + String(brake) + " MC: " + String(MC) + " Throttle: " + String(throttleOut) + " brake value: " + String(map_value(5, POT_MAX, 4.5)));
     }
   }
@@ -130,9 +154,11 @@ static THD_FUNCTION(read, arg) {
 
 static THD_WORKING_AREA(waThread5, 64);
 
-static THD_FUNCTION(write, arg) {
+static THD_FUNCTION(write, arg)
+{
   (void)arg;
-  while (true) {
+  while (true)
+  {
     digitalWrite(MCPin, MC);
     analogWrite(throttlePin, throttleOut);
   }
@@ -144,23 +170,23 @@ float map_value(uint16_t aMax, uint16_t bMax, float inValue)
   return ((float)bMax / aMax) * (inValue);
 }
 
-void chSetup() {
+void chSetup()
+{
   // Start threads.
   chThdCreateStatic(waThread1, sizeof(waThread1),
-    NORMALPRIO, throttleCheck, NULL);
+                    NORMALPRIO, throttleCheck, NULL);
 
   chThdCreateStatic(waThread2, sizeof(waThread2),
-    NORMALPRIO, brakeCheck, NULL);
-  
+                    NORMALPRIO, brakeCheck, NULL);
+
   chThdCreateStatic(waThread3, sizeof(waThread3),
-    NORMALPRIO, rtd, NULL);
+                    NORMALPRIO, rtd, NULL);
 
   chThdCreateStatic(waThread4, sizeof(waThread4),
-    NORMALPRIO, read, NULL);
+                    NORMALPRIO, read, NULL);
 
   chThdCreateStatic(waThread5, sizeof(waThread5),
-    NORMALPRIO, write, NULL);
-
+                    NORMALPRIO, write, NULL);
 }
 
 void setup()
@@ -177,7 +203,6 @@ void setup()
   pinMode(MCPin, OUTPUT);
   digitalWrite(MCPin, MC);
   pinMode(throttlePin, OUTPUT);
-  pinMode(keySwitchPin, INPUT_PULLDOWN);
   pinMode(buzzerPin, OUTPUT);
 
   chBegin(chSetup);
