@@ -3,8 +3,6 @@
 #include <mcp2515.h>
 #include <Arduino_FreeRTOS.h>
 
-// github test
-
 struct can_frame canMsg;
 
 uint8_t throttle1Pin = A7;
@@ -15,6 +13,14 @@ uint8_t keySwitchPin = 6;
 
 MCP2515 mcp2515;
 
+struct sensorValues {
+  uint16_t throttle1Value;
+  uint16_t throttle2Value;
+  uint16_t brakeValue;
+  uint8_t tsValue;
+  uint8_t keyValue;
+};
+
 void throttle1(void *pvParameters);
 void throttle2(void *pvParameters);
 void brake(void *pvParameters);
@@ -22,11 +28,8 @@ void send(void *pvParameters);
 void ts(void *pvParameters);
 void key(void *pvParameters);
 
-uint16_t throttle1Value = 0;
-uint16_t throttle2Value = 0;
-uint16_t brakeValue = 0;
-uint8_t tsValue = 0;
-uint8_t keyValue = 0;
+sensorValues sensorVals{0, 0, 0, 0, 0};
+
 
 void setup()
 {
@@ -60,7 +63,7 @@ void throttle1(void *pvParameters)
 {
   while (true)
   {
-    throttle1Value = analogRead(throttle1Pin);
+    sensorVals.throttle1Value = analogRead(throttle1Pin);
   }
 }
 
@@ -68,7 +71,7 @@ void throttle2(void *pvParameters)
 {
   while (true)
   {
-    throttle2Value = analogRead(throttle2Pin);
+    sensorVals.throttle2Value = analogRead(throttle2Pin);
   }
 }
 
@@ -76,7 +79,7 @@ void brake(void *pvParameteres)
 {
   while (true)
   {
-    brakeValue = analogRead(brakePin);
+    sensorVals.brakeValue = analogRead(brakePin);
   }
 }
 
@@ -84,7 +87,7 @@ void ts(void *pvParameteres)
 {
   while (true)
   {
-    tsValue = digitalRead(tsSwitchPin);
+    sensorVals.tsValue = digitalRead(tsSwitchPin);
   }
 }
 
@@ -92,7 +95,7 @@ void key(void *pvParameteres)
 {
   while (true)
   {
-    keyValue = digitalRead(keySwitchPin);
+    sensorVals.keyValue = digitalRead(keySwitchPin);
   }
 }
 
@@ -102,21 +105,21 @@ void send(void *pvParameters)
   {
     canMsg.can_id = 0x036; // CAN id as 0x036
     canMsg.can_dlc = 8;    // CAN data length as 8
-    canMsg.data[0] = throttle1Value >> 8;
-    canMsg.data[1] = throttle1Value & 0xFF;
-    canMsg.data[2] = throttle2Value >> 8;
-    canMsg.data[3] = throttle2Value & 0xFF;
-    canMsg.data[4] = brakeValue >> 8;
-    canMsg.data[5] = brakeValue & 0xFF;
-    canMsg.data[6] = tsValue;
-    canMsg.data[7] = keyValue;
+    canMsg.data[0] = sensorVals.throttle1Value >> 8;
+    canMsg.data[1] = sensorVals.throttle1Value & 0xFF;
+    canMsg.data[2] = sensorVals.throttle2Value >> 8;
+    canMsg.data[3] = sensorVals.throttle2Value & 0xFF;
+    canMsg.data[4] = sensorVals.brakeValue >> 8;
+    canMsg.data[5] = sensorVals.brakeValue & 0xFF;
+    canMsg.data[6] = sensorVals.tsValue;
+    canMsg.data[7] = sensorVals.keyValue;
 
     mcp2515.sendMessage(&canMsg); // Sends the CAN message
     delay(10);
 
     Serial.print("tsValue: " );
-    Serial.println(tsValue);
+    Serial.println(sensorVals.tsValue);
     Serial.print("keyValue: " );
-    Serial.println(keyValue);
+    Serial.println(sensorVals.keyValue);
   }
 }

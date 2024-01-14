@@ -5,14 +5,14 @@
 
 enum State
 {
-  IDLE,
+  STANDBY,
   TRACTIVE_SYSTEM_ACTIVE,
   READY_TO_DRIVE,
   DRIVING,
   FAULT
 };
 
-String stateNames[] = {"IDLE", "TRACTIVE_SYSTEM_ACTIVE", "READY_TO_DRIVE", "DRIVING", "FAULT"};
+String stateNames[] = {"STANDBY", "TRACTIVE_SYSTEM_ACTIVE", "READY_TO_DRIVE", "DRIVING", "FAULT"};
 
 MUTEX_DECL(stateMutex);
 MUTEX_DECL(appsMutex);
@@ -42,7 +42,7 @@ MCP2515 mcp2515;
 uint32_t faultTime = 0;
 uint8_t throttleOut = 0;
 
-State CURR_STATE = IDLE;
+State CURR_STATE = STANDBY;
 
 uint8_t appsFault = 0;
 uint8_t bseFault = 0;
@@ -103,7 +103,7 @@ static THD_FUNCTION(rtd, arg)
   {
     chMtxLock(&stateMutex);
 
-    if (CURR_STATE == IDLE)
+    if (CURR_STATE == STANDBY)
     {
       if (tractiveSystemActiveValue == 1)
       {
@@ -115,11 +115,10 @@ static THD_FUNCTION(rtd, arg)
       if (map_value(POT_MAX, 5, brake) > brake_low && map_value(POT_MAX, 5, brake) < brake_high)
       {
         CURR_STATE = READY_TO_DRIVE;
-        tone(buzzerPin, 1000, 3000);
       }
       else if (tractiveSystemActiveValue == 0)
       {
-        CURR_STATE = IDLE;
+        CURR_STATE = STANDBY;
         tone(buzzerPin, 0);
       }
     }
@@ -127,11 +126,12 @@ static THD_FUNCTION(rtd, arg)
     {
       if (keySwitchValue == 1)
       {
+        tone(buzzerPin, 1000, 3000);
         CURR_STATE = DRIVING;
       }
       else if (tractiveSystemActiveValue == 0)
       {
-        CURR_STATE = IDLE;
+        CURR_STATE = STANDBY;
         tone(buzzerPin, 0);
       }
       else if (map_value(POT_MAX, 5, brake) <= brake_low)
@@ -143,7 +143,7 @@ static THD_FUNCTION(rtd, arg)
     {
       if (tractiveSystemActiveValue == 0)
       {
-        CURR_STATE = IDLE;
+        CURR_STATE = STANDBY;
       }
       else if (keySwitchValue == 0)
       {
