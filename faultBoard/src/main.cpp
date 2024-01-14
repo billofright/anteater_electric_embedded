@@ -115,6 +115,7 @@ static THD_FUNCTION(rtd, arg)
       if (map_value(POT_MAX, 5, brake) > brake_low && map_value(POT_MAX, 5, brake) < brake_high)
       {
         CURR_STATE = READY_TO_DRIVE;
+        tone(buzzerPin, 1000, 3000);
       }
       else if (tractiveSystemActiveValue == 0)
       {
@@ -126,7 +127,6 @@ static THD_FUNCTION(rtd, arg)
     {
       if (keySwitchValue == 1)
       {
-        tone(buzzerPin, 1000, 3000);
         CURR_STATE = DRIVING;
       }
       else if (tractiveSystemActiveValue == 0)
