@@ -9,7 +9,7 @@ uint8_t throttle1Pin = A7;
 uint8_t throttle2Pin = A6;
 uint8_t brakePin = A5;
 uint8_t tsSwitchPin = 5;
-uint8_t keySwitchPin = 6;
+uint8_t pushButtonPin = 6;
 
 MCP2515 mcp2515;
 
@@ -18,7 +18,7 @@ struct sensorValues {
   uint16_t throttle2Value;
   uint16_t brakeValue;
   uint8_t tsValue;
-  uint8_t keyValue;
+  bool keyValue;
 };
 
 void throttle1(void *pvParameters);
@@ -53,7 +53,7 @@ void setup()
   pinMode(throttle1Pin, INPUT);
   pinMode(throttle2Pin, INPUT);
   pinMode(tsSwitchPin, INPUT);
-  pinMode(keySwitchPin, INPUT);
+  pinMode(pushButtonPin, INPUT);
 
 }
 
@@ -93,10 +93,35 @@ void ts(void *pvParameteres)
 
 void key(void *pvParameteres)
 {
+  int initialButtonState = LOW;
+  unsigned long lastDebounceTime = 0;
+  unsigned long debounceDelay = 500;  //500 ms = .5 seconds
+  int buttonState;    //high
+
   while (true)
   {
-    sensorVals.keyValue = digitalRead(keySwitchPin);
+
+    int reading = digitalRead(pushButtonPin);
+    //reading = high
+
+    if (reading != initialButtonState)
+    {
+      lastDebounceTime = millis();
+    }
+
+    if ((millis() - lastDebounceTime) > debounceDelay)
+    {
+      if (reading != initialButtonState)
+      {
+        buttonState = reading;
+      }
+       if (buttonState == HIGH) {
+        sensorVals.keyValue = 1;
+       }
+    }
   }
+    initialButtonState = reading;
+
 }
 
 void send(void *pvParameters)
