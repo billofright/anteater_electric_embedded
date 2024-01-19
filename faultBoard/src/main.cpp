@@ -17,6 +17,7 @@ String stateNames[] = {"STANDBY", "TRACTIVE_SYSTEM_ACTIVE", "READY_TO_DRIVE", "D
 MUTEX_DECL(stateMutex);
 MUTEX_DECL(appsMutex);
 MUTEX_DECL(bseMutex);
+MUTEX_DECL(bspdMutex);
 
 struct can_frame canMsg;
 
@@ -46,7 +47,7 @@ State CURR_STATE = STANDBY;
 
 uint8_t appsFault = 0;
 uint8_t bseFault = 0;
-
+uint8_t bspdFault = 0;
 
 static THD_WORKING_AREA(waThread1, 64);
 
@@ -112,16 +113,17 @@ static THD_FUNCTION(rtd, arg)
     }
     else if (CURR_STATE == TRACTIVE_SYSTEM_ACTIVE)
     {
-      if (map_value(POT_MAX, 5, brake) > brake_low && map_value(POT_MAX, 5, brake) < brake_high)
-      {
-        CURR_STATE = READY_TO_DRIVE;
-        tone(buzzerPin, 1000, 3000);
-      }
-      else if (tractiveSystemActiveValue == 0)
-      {
-        CURR_STATE = STANDBY;
-        tone(buzzerPin, 0);
-      }
+      CURR_STATE = DRIVING;
+      // if (map_value(POT_MAX, 5, brake) > brake_low && map_value(POT_MAX, 5, brake) < brake_high)
+      // {
+      //   CURR_STATE = READY_TO_DRIVE;
+      //   tone(buzzerPin, 1000, 3000);
+      // }
+      // else if (tractiveSystemActiveValue == 0)
+      // {
+      //   CURR_STATE = STANDBY;
+      //   tone(buzzerPin, 0);
+      // }
     }
     else if (CURR_STATE == READY_TO_DRIVE)
     {
@@ -141,14 +143,15 @@ static THD_FUNCTION(rtd, arg)
     }
     else if (CURR_STATE == DRIVING)
     {
-      if (tractiveSystemActiveValue == 0)
-      {
-        CURR_STATE = STANDBY;
-      }
-      else if (keySwitchValue == 0)
-      {
-        CURR_STATE = READY_TO_DRIVE;
-      }
+      // if (tractiveSystemActiveValue == 0)
+      // {
+      //   CURR_STATE = STANDBY;
+      // }
+      // else if (keySwitchValue == 0)
+      // {
+      //   CURR_STATE = READY_TO_DRIVE;
+      // }
+      CURR_STATE = DRIVING;
     }
 
     chMtxUnlock(&stateMutex);
@@ -169,12 +172,12 @@ static THD_FUNCTION(read, arg)
       brake = (uint16_t)canMsg.data[4] << 8 | canMsg.data[5];
       tractiveSystemActiveValue = canMsg.data[6];
       keySwitchValue = canMsg.data[7];
-      Serial.print("throttle1: ");
-      Serial.print(throttle1*100/POT_MAX);
-      Serial.print("% throttle2: ");
-      Serial.print(throttle2*100/POT_MAX);
-      Serial.print("% brake value: ");
-      Serial.print(map_value(POT_MAX, 5, brake));
+      // Serial.print("throttle1: ");
+      // Serial.print(throttle1 * 100 / POT_MAX);
+      // Serial.print("% throttle2: ");
+      // Serial.print(throttle2 * 100 / POT_MAX);
+      // Serial.print("% brake value: ");
+      // Serial.print(map_value(POT_MAX, 5, brake));
       Serial.print(" current state: ");
       Serial.println(stateNames[CURR_STATE]);
     }
@@ -188,18 +191,24 @@ static THD_FUNCTION(write, arg)
   (void)arg;
   while (true)
   {
-    chMtxLock(&bseMutex);
-    uint8_t currBse = bseFault;
-    chMtxUnlock(&bseMutex);
+    // chMtxLock(&bseMutex);
+    // uint8_t currBse = bseFault;
+    // chMtxUnlock(&bseMutex);
 
-    chMtxLock(&appsMutex);
-    uint8_t currApps = appsFault;
-    chMtxUnlock(&appsMutex);
+    // chMtxLock(&appsMutex);
+    // uint8_t currApps = appsFault;
+    // chMtxUnlock(&appsMutex);
 
-    if(currBse || currApps)
+    chMtxLock(&bspdMutex);
+    uint8_t currBspd = bspdFault;
+    chMtxUnlock(&bspdMutex);
+
+    if (currBspd)
+    // if (currBse || currApps || currBspd)
     {
       chMtxLock(&stateMutex);
-      if(CURR_STATE == DRIVING){
+      if (CURR_STATE == DRIVING)
+      {
         CURR_STATE = FAULT;
       }
       chMtxUnlock(&stateMutex);
@@ -209,7 +218,8 @@ static THD_FUNCTION(write, arg)
     else
     {
       chMtxLock(&stateMutex);
-      if(CURR_STATE == FAULT){
+      if (CURR_STATE == FAULT)
+      {
         CURR_STATE = DRIVING;
       }
       chMtxUnlock(&stateMutex);
@@ -222,6 +232,24 @@ static THD_FUNCTION(write, arg)
   }
 }
 
+static THD_WORKING_AREA(waThread6, 64);
+
+static THD_FUNCTION(bspd, arg)
+{
+  (void)arg;
+  while (true)
+  {
+    float currThrottle = map_value(POT_MAX, 100, throttleOut);
+    float currBrake = map_value(POT_MAX, 5, brake);
+    Serial.println("currThrottle: " + String(currThrottle) + "     currBrake: " + String(currBrake));
+    chMtxLock(&bspdMutex);
+    if (bspdFault)
+      bspdFault = !(currThrottle < 5); // true is good, 0 is fault off
+    else
+      bspdFault = currThrottle > 25 && currBrake > 0.5;
+    chMtxUnlock(&bspdMutex);
+  }
+}
 
 void chSetup()
 {
@@ -240,6 +268,9 @@ void chSetup()
 
   chThdCreateStatic(waThread5, sizeof(waThread5),
                     NORMALPRIO, write, NULL);
+
+  chThdCreateStatic(waThread6, sizeof(waThread6),
+                    NORMALPRIO, bspd, NULL);
 }
 
 void setup()
@@ -263,4 +294,5 @@ void setup()
 
 // FAULT BOARD
 void loop()
-{}
+{
+}
