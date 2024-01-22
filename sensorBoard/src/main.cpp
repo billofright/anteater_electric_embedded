@@ -98,7 +98,6 @@ void key(void *pvParameteres)
   while (true)
   {
     int currValue = digitalRead(keySwitchPin);
-    // Serial.println(digitalRead(keySwitchPin));
     if(currValue == HIGH && prevValue == LOW && millis() - lastPressed > 500){
       lastPressed = millis();
       sensorVals.keyValue = !sensorVals.keyValue;
