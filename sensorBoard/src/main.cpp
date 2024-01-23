@@ -128,6 +128,7 @@ void key(void *pvParameteres)
       if (buttonState == LOW) {
         buttonReleased = true; //set the flag
       }
+
   }
   initialButtonState = reading;
 }
