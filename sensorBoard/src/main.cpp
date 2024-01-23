@@ -9,7 +9,7 @@ uint8_t throttle1Pin = A7;
 uint8_t throttle2Pin = A6;
 uint8_t brakePin = A5;
 uint8_t tsSwitchPin = 5;
-uint8_t keySwitchPin = 6;
+uint8_t pushButtonPin = 6;
 
 MCP2515 mcp2515;
 
@@ -18,7 +18,7 @@ struct sensorValues {
   uint16_t throttle2Value;
   uint16_t brakeValue;
   uint8_t tsValue;
-  uint8_t keyValue;
+  bool keyValue;
 };
 
 void throttle1(void *pvParameters);
@@ -53,7 +53,7 @@ void setup()
   pinMode(throttle1Pin, INPUT);
   pinMode(throttle2Pin, INPUT);
   pinMode(tsSwitchPin, INPUT);
-  pinMode(keySwitchPin, INPUT);
+  pinMode(pushButtonPin, INPUT);
 
 }
 
@@ -93,17 +93,44 @@ void ts(void *pvParameteres)
 
 void key(void *pvParameteres)
 {
-  int lastPressed = millis();
-  int prevValue = LOW;
+
+  int initialButtonState = LOW;
+  int currentButtonState = HIGH;
+  int buttonState = LOW;
+  bool buttonReleased = true;    //Add a flag to track if the button has been released
+  unsigned long lastDebounceTime = 0;
+  unsigned long debounceDelay = 50;  //500 ms = .5 seconds
+
   while (true)
   {
-    int currValue = digitalRead(keySwitchPin);
-    if(currValue == HIGH && prevValue == LOW && millis() - lastPressed > 500){
-      lastPressed = millis();
-      sensorVals.keyValue = !sensorVals.keyValue;
+
+    int reading = digitalRead(pushButtonPin);
+    //reading = high
+
+    if (reading != initialButtonState)  //if the current state is high
+    {
+      lastDebounceTime = millis();    //reset the debouncing timer
     }
-    prevValue = currValue;
+
+//whatever the current state is, if the time since the last debounce is greater than the debounce delay
+    if ((millis() - lastDebounceTime) > debounceDelay)
+    {
+      //if the reading is different than the button state
+      if (reading != buttonState)
+      {
+        buttonState = reading;    //set the current reading to buttonState
+
+        if (buttonState == HIGH && buttonReleased == true) {
+          sensorVals.keyValue = !sensorVals.keyValue;
+          buttonReleased = false; //reset the flag
+        }
+      }
+      if (buttonState == LOW) {
+        buttonReleased = true; //set the flag
+      }
+
   }
+  initialButtonState = reading;
 }
 
 void send(void *pvParameters)
