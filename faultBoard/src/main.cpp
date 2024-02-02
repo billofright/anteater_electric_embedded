@@ -26,6 +26,7 @@ const uint16_t POT_MAX = 1023;
 uint8_t MCPin = 3;
 uint8_t throttlePin = A9;
 uint8_t buzzerPin = 4;
+uint8_t lm331Pin = 0;
 
 uint16_t throttle1 = 0;
 uint16_t throttle2 = 0;
@@ -49,6 +50,14 @@ State CURR_STATE = DRIVING;
 uint8_t appsFault = 0;
 uint8_t bseFault = 0;
 uint8_t appsPlausFault = 0;
+
+double fToV(double f)
+{
+  // equation derived from data plot as F = 76.7*V + 2.93
+  // therefore, V = (F - 2.93) / 76.7
+  return (f - 2.93) / 76.7;
+}
+
 
 static THD_WORKING_AREA(waThread1, 64);
 
@@ -248,6 +257,26 @@ static THD_FUNCTION(appsPlaus, arg)
   }
 }
 
+static THD_WORKING_AREA(waThread7, 64);
+
+static THD_FUNCTION(pcc, arg){
+  (void)arg;
+  while(true){
+    const u_int16_t TIMEOUT = 0;
+    uint16_t tHigh = pulseIn(lm331Pin, HIGH, TIMEOUT);
+    uint16_t tLow = pulseIn(lm331Pin, LOW, TIMEOUT);
+    if (tHigh == 0 || tLow == 0){
+      Serial.println("No signal");
+      continue;
+    }
+
+    double f = 1000000.0 / (double)(tHigh + tLow);    // f = 1/T
+    double v = fToV(f);
+    Serial.println(v);
+  }
+}
+
+
 void chSetup()
 {
   // Start threads.
@@ -268,6 +297,9 @@ void chSetup()
 
   chThdCreateStatic(waThread6, sizeof(waThread6),
                     NORMALPRIO, appsPlaus, NULL);
+
+  chThdCreateStatic(waThread7, sizeof(waThread7),
+                    NORMALPRIO+1, pcc, NULL);
 }
 
 void setup()
@@ -285,6 +317,7 @@ void setup()
   digitalWrite(MCPin, MC);
   pinMode(throttlePin, OUTPUT);
   pinMode(buzzerPin, OUTPUT);
+  pinMode(lm331Pin, INPUT);
 
   chBegin(chSetup);
 }
