@@ -13,6 +13,7 @@ enum State
   FAULT
 };
 
+
 String stateNames[] = {"STANDBY", "TRACTIVE_SYSTEM_ACTIVE", "READY_TO_DRIVE", "DRIVING", "FAULT"};
 
 MUTEX_DECL(stateMutex);
@@ -22,35 +23,31 @@ MUTEX_DECL(appsPlausMutex);
 
 struct can_frame canMsg;
 
+//constants
 const uint16_t POT_MAX = 1023;
+const uint8_t MCPin = 3;
+const uint8_t throttlePin = A9;
+const uint8_t buzzerPin = 4;
+const uint8_t lm331Pin = 0;
+float brake_low = 0.5;
+float brake_high = 4.5;
 
-uint8_t MCPin = 3;
-uint8_t throttlePin = A9;
-uint8_t buzzerPin = 4;
-uint8_t lm331Pin = 0;
-
+//variables
 uint16_t throttle1 = 0;
 uint16_t throttle2 = 0;
 uint16_t brake = 0;
 uint8_t tractiveSystemActiveValue = 0;
 uint8_t keySwitchValue = 0;
-
-float brake_low = 0.5;
-float brake_high = 4.5;
-
 uint8_t MC = 0;
-
-MCP2515 mcp2515;
-
 uint32_t faultTime = 0;
 uint8_t throttleOut = 0;
-
-State CURR_STATE = DRIVING;
-// change
-
 uint8_t appsFault = 0;
 uint8_t bseFault = 0;
 uint8_t appsPlausFault = 0;
+
+MCP2515 mcp2515;
+
+State CURR_STATE = DRIVING;
 
 static THD_WORKING_AREA(waThread1, 64);
 
@@ -63,6 +60,7 @@ static THD_FUNCTION(throttleCheck, arg)
     {
       faultTime = millis();
     }
+
     if (millis() - faultTime >= 100)
     {
       chMtxLock(&appsMutex);

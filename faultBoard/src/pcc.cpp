@@ -7,12 +7,11 @@ double getVoltage(uint8_t pin)
     // accumulator is 100.8V max, and we'll use a 10% voltage divider, 
     // so max return value is 10.08
     double f = getFrequency(pin);
-    return (f - 2.93) / 76.7;
+    return (f - FREQUENCY) / VOLTAGE;
 }
 
 double getFrequency(uint8_t pin)
 {
-    const u_int16_t TIMEOUT = 0;
     uint16_t tHigh = pulseIn(pin, HIGH, TIMEOUT);
     uint16_t tLow = pulseIn(pin, LOW, TIMEOUT);
     if (tHigh == 0 || tLow == 0){
@@ -26,7 +25,7 @@ uint8_t prechargeSequence(uint8_t tsVoltagePin, uint8_t accVoltagePin, uint8_t p
     digitalWrite(prechargeRelayPin, HIGH);
     delay(100);
     uint32_t start = millis();
-    while(getVoltage(tsVoltagePin) < 10.08){
+    while(getVoltage(tsVoltagePin) < MAXVOLTAGE){
         delay(100);
     }
     uint32_t duration = millis() - start;
