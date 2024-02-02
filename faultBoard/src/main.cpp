@@ -2,6 +2,7 @@
 #include <SPI.h>
 #include <mcp2515.h>
 #include <ChRt.h>
+#include "pcc.h"
 
 enum State
 {
@@ -50,14 +51,6 @@ State CURR_STATE = DRIVING;
 uint8_t appsFault = 0;
 uint8_t bseFault = 0;
 uint8_t appsPlausFault = 0;
-
-double fToV(double f)
-{
-  // equation derived from data plot as F = 76.7*V + 2.93
-  // therefore, V = (F - 2.93) / 76.7
-  return (f - 2.93) / 76.7;
-}
-
 
 static THD_WORKING_AREA(waThread1, 64);
 
@@ -262,16 +255,7 @@ static THD_WORKING_AREA(waThread7, 64);
 static THD_FUNCTION(pcc, arg){
   (void)arg;
   while(true){
-    const u_int16_t TIMEOUT = 0;
-    uint16_t tHigh = pulseIn(lm331Pin, HIGH, TIMEOUT);
-    uint16_t tLow = pulseIn(lm331Pin, LOW, TIMEOUT);
-    if (tHigh == 0 || tLow == 0){
-      Serial.println("No signal");
-      continue;
-    }
-
-    double f = 1000000.0 / (double)(tHigh + tLow);    // f = 1/T
-    double v = fToV(f);
+    double v = getVoltage(lm331Pin);
     Serial.println(v);
   }
 }

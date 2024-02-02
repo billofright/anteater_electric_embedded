@@ -93,44 +93,19 @@ void ts(void *pvParameteres)
 
 void key(void *pvParameteres)
 {
-
-  int initialButtonState = LOW;
-  int currentButtonState = HIGH;
-  int buttonState = LOW;
-  bool buttonReleased = true;    //Add a flag to track if the button has been released
-  unsigned long lastDebounceTime = 0;
-  unsigned long debounceDelay = 50;  //500 ms = .5 seconds
+  uint32_t lastPressed = millis();
+  uint8_t prevValue = LOW;
+  uint16_t debounceDelay = 500;
 
   while (true)
   {
-
-    int reading = digitalRead(pushButtonPin);
-    //reading = high
-
-    if (reading != initialButtonState)  //if the current state is high
-    {
-      lastDebounceTime = millis();    //reset the debouncing timer
+    int currValue = digitalRead(pushButtonPin);
+    if(currValue == HIGH && prevValue == LOW && millis() - lastPressed > debounceDelay){
+      lastPressed = millis();
+      sensorVals.keyValue = !sensorVals.keyValue;
     }
-
-//whatever the current state is, if the time since the last debounce is greater than the debounce delay
-    if ((millis() - lastDebounceTime) > debounceDelay)
-    {
-      //if the reading is different than the button state
-      if (reading != buttonState)
-      {
-        buttonState = reading;    //set the current reading to buttonState
-
-        if (buttonState == HIGH && buttonReleased == true) {
-          sensorVals.keyValue = !sensorVals.keyValue;
-          buttonReleased = false; //reset the flag
-        }
-      }
-      if (buttonState == LOW) {
-        buttonReleased = true; //set the flag
-      }
-
+    prevValue = currValue;
   }
-  initialButtonState = reading;
 }
 
 void send(void *pvParameters)
