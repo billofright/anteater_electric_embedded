@@ -1,6 +1,4 @@
 #include <Arduino.h>
-#include <SPI.h>
-#include <mcp2515.h>
 #include <ChRt.h>
 #include "pcc.h"
 
@@ -20,7 +18,7 @@ MUTEX_DECL(appsMutex);
 MUTEX_DECL(bseMutex);
 MUTEX_DECL(appsPlausMutex);
 
-struct can_frame canMsg;
+// struct can_frame canMsg;
 
 const uint16_t POT_MAX = 1023;
 
@@ -40,12 +38,10 @@ float brake_high = 4.5;
 
 uint8_t MC = 0;
 
-MCP2515 mcp2515;
-
 uint32_t faultTime = 0;
 uint8_t throttleOut = 0;
 
-State CURR_STATE = DRIVING;
+State CURR_STATE = STANDBY;
 // change
 
 uint8_t appsFault = 0;
@@ -57,6 +53,7 @@ static THD_WORKING_AREA(waThread1, 64);
 static THD_FUNCTION(throttleCheck, arg)
 {
   (void)arg;
+
   while (true)
   {
     if (abs(throttle1 - throttle2) <= POT_MAX / 10)
@@ -166,22 +163,22 @@ static THD_FUNCTION(read, arg)
   (void)arg;
   while (true)
   {
-    if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
-    {
-      throttle1 = (uint16_t)canMsg.data[0] << 8 | canMsg.data[1];
-      throttle2 = (uint16_t)canMsg.data[2] << 8 | canMsg.data[3];
-      brake = (uint16_t)canMsg.data[4] << 8 | canMsg.data[5];
-      tractiveSystemActiveValue = canMsg.data[6];
-      keySwitchValue = canMsg.data[7];
-      Serial.print("throttle1: ");
-      Serial.print(throttle1 * 100 / POT_MAX);
-      Serial.print("% throttle2: ");
-      Serial.print(throttle2 * 100 / POT_MAX);
-      Serial.print("% brake value: ");
-      Serial.print(map_value(POT_MAX, 5, brake));
-      Serial.print(" current state: ");
-      Serial.println(stateNames[CURR_STATE]);
-    }
+    // if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
+    // {
+    //   throttle1 = (uint16_t)canMsg.data[0] << 8 | canMsg.data[1];
+    //   throttle2 = (uint16_t)canMsg.data[2] << 8 | canMsg.data[3];
+    //   brake = (uint16_t)canMsg.data[4] << 8 | canMsg.data[5];
+    //   tractiveSystemActiveValue = canMsg.data[6];
+    //   keySwitchValue = canMsg.data[7];
+    //   Serial.print("throttle1: ");
+    //   Serial.print(throttle1 * 100 / POT_MAX);
+    //   Serial.print("% throttle2: ");
+    //   Serial.print(throttle2 * 100 / POT_MAX);
+    //   Serial.print("% brake value: ");
+    //   Serial.print(map_value(POT_MAX, 5, brake));
+    //   Serial.print(" current state: ");
+    //   Serial.println(stateNames[CURR_STATE]);
+    // }
   }
 }
 
@@ -273,37 +270,40 @@ void chSetup()
   chThdCreateStatic(waThread3, sizeof(waThread3),
                     NORMALPRIO, rtd, NULL);
 
-  chThdCreateStatic(waThread4, sizeof(waThread4),
-                    NORMALPRIO, read, NULL);
+  // chThdCreateStatic(waThread4, sizeof(waThread4),
+  //                   NORMALPRIO, read, NULL);
 
-  chThdCreateStatic(waThread5, sizeof(waThread5),
-                    NORMALPRIO, write, NULL);
+  // chThdCreateStatic(waThread5, sizeof(waThread5),
+  //                   NORMALPRIO, write, NULL);
 
   chThdCreateStatic(waThread6, sizeof(waThread6),
                     NORMALPRIO, appsPlaus, NULL);
 
-  chThdCreateStatic(waThread7, sizeof(waThread7),
-                    NORMALPRIO+1, pcc, NULL);
+  // chThdCreateStatic(waThread7, sizeof(waThread7),
+  //                   NORMALPRIO+1, pcc, NULL);
 }
 
 void setup()
 {
   Serial.begin(9600);
-  SPI.begin(); // Begins SPI communication
+  // SPI.begin(); // Begins SPI communication
 
-  mcp2515.init(10);
+  // mcp2515.init(10);
 
-  mcp2515.reset();
-  mcp2515.setBitrate(CAN_125KBPS);
-  mcp2515.setNormalMode();
+  // mcp2515.reset();
+  // mcp2515.setBitrate(CAN_125KBPS);
+  // mcp2515.setNormalMode();
 
-  pinMode(MCPin, OUTPUT);
-  digitalWrite(MCPin, MC);
-  pinMode(throttlePin, OUTPUT);
-  pinMode(buzzerPin, OUTPUT);
-  pinMode(lm331Pin, INPUT);
+  // pinMode(MCPin, OUTPUT);
+  // digitalWrite(MCPin, MC);
+  // pinMode(throttlePin, OUTPUT);
+  // pinMode(buzzerPin, OUTPUT);
+  // pinMode(lm331Pin, INPUT);
 
-  chBegin(chSetup);
+      Serial.println("apps plaus");
+  chBegin(&chSetup);
+
+
 }
 
 // FAULT BOARD
