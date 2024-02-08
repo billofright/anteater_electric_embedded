@@ -8,7 +8,7 @@
 // struct can_frame canMsg;
 // MCP2515 mcp2515;
 
-FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16> sensorCAN;
+FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> sensorCAN;
 
 uint8_t throttle1Pin = A7;
 uint8_t throttle2Pin = A6;
@@ -60,14 +60,14 @@ static THD_FUNCTION(brake, arg) {
 static THD_WORKING_AREA(waThread4, 64);
 static THD_FUNCTION(send, arg) {
   (void)arg;
-  CANFD_message_t msg;
+  CAN_message_t msg;
   while (true) {
     msg.id = 0x036;
-    msg.len = 64;
-    memcpy(msg.buf, &sensorVals, 64);
+    msg.len = 8;
+    memcpy(msg.buf, &sensorVals, sizeof(sensorVals));
     sensorCAN.write(msg);
 
-    delay(10);
+    delay(100);
   }
 }
 
@@ -99,12 +99,12 @@ static THD_FUNCTION(key, arg) {
 }
 
 void chSetup(){
-  chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, throttle1, NULL);
-  chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, throttle2, NULL);
-  chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, brake, NULL);
+  // chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, throttle1, NULL);
+  // chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, throttle2, NULL);
+  // chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, brake, NULL);
   chThdCreateStatic(waThread4, sizeof(waThread4), NORMALPRIO, send, NULL);
-  chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, ts, NULL);
-  chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, key, NULL);
+  // chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, ts, NULL);
+  // chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, key, NULL);
 }
 
 
@@ -112,22 +112,22 @@ void setup()
 {
   Serial.begin(9600);
 
-  CANFD_timings_t config;
-  config.clock = CLK_24MHz;
-  config.baudrate = 1000000;
-  config.baudrateFD = 2000000;
-  config.propdelay = 190;
-  config.bus_length = 1;
-  config.sample = 70;
-  sensorCAN.setBaudRate(config);
-
-  pinMode(throttle1Pin, INPUT);
-  pinMode(throttle2Pin, INPUT);
-  pinMode(tsSwitchPin, INPUT);
-  pinMode(pushButtonPin, INPUT);
-
+  // CANFD_timings_t config;
+  // config.clock = CLK_24MHz;
+  // config.baudrate = 1000000;
+  // config.baudrateFD = 2000000;
+  // config.propdelay = 190;
+  // config.bus_length = 1;
+  // config.sample = 70;
+  // sensorCAN.setBaudRate(config);
   sensorCAN.begin();
-  chSetup();
+  sensorCAN.setBaudRate(250000);
+  // pinMode(throttle1Pin, INPUT);
+  // pinMode(throttle2Pin, INPUT);
+  // pinMode(tsSwitchPin, INPUT);
+  // pinMode(pushButtonPin, INPUT);
+
+  chBegin(&chSetup);
 
   // SPI.begin();
 

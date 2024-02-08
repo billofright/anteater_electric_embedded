@@ -59,7 +59,7 @@ uint8_t appsFault = 0;
 uint8_t bseFault = 0;
 uint8_t appsPlausFault = 0;
 
-FlexCAN_T4FD<CAN3, RX_SIZE_256, TX_SIZE_16> faultCAN;
+FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> faultCAN;
 
 static THD_WORKING_AREA(waThread1, 64);
 
@@ -174,11 +174,11 @@ static THD_WORKING_AREA(waThread4, 64);
 static THD_FUNCTION(read, arg)
 {
   (void)arg;
-  CANFD_message_t msg;
+  CAN_message_t msg;
   while (true){
     if (faultCAN.read(msg) && msg.id == 0x036){
+      // Serial.println("receiving!");
       memcpy(&data, msg.buf, sizeof(data));
-      Serial.print("throttle1: ");
       Serial.print(data.throttle1Value * 100 / POT_MAX);
       Serial.print("% throttle2: ");
       Serial.print(data.throttle2Value * 100 / POT_MAX);
@@ -286,31 +286,31 @@ static THD_FUNCTION(pcc, arg){
 void chSetup()
 {
   // Start threads.
-  chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, throttleCheck, NULL);
-  chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, brakeCheck, NULL);
-  chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, rtd, NULL);
+  // chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, throttleCheck, NULL);
+  // chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, brakeCheck, NULL);
+  // chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, rtd, NULL);
   chThdCreateStatic(waThread4, sizeof(waThread4), NORMALPRIO, read, NULL);
   // chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, write, NULL);
-  chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, appsPlaus, NULL);
+  // chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, appsPlaus, NULL);
   // chThdCreateStatic(waThread7, sizeof(waThread7), NORMALPRIO+1, pcc, NULL);
 }
 
 void setup()
 {
   Serial.begin(9600);
-  chBegin(&chSetup);
 
-  CANFD_timings_t config;
-  config.clock = CLK_24MHz;
-  config.baudrate = 1000000;
-  config.baudrateFD = 2000000;
-  config.propdelay = 190;
-  config.bus_length = 1;
-  config.sample = 70;
-  faultCAN.setBaudRate(config);
-
+  // CANFD_timings_t config;
+  // config.clock = CLK_24MHz;
+  // config.baudrate = 1000000;
+  // config.baudrateFD = 2000000;
+  // config.propdelay = 190;
+  // config.bus_length = 1;
+  // config.sample = 70;
   faultCAN.begin();
+  faultCAN.setBaudRate(250000);
 
+
+  chBegin(&chSetup);
 
   // SPI.begin(); // Begins SPI communication
 
