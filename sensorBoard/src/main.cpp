@@ -2,15 +2,6 @@
 #include <ChRt.h>
 #include <FlexCAN_T4.h>
 
-<<<<<<< HEAD
-=======
-// #include <SPI.h>
-// #include <mcp2515.h>
-// #include <Arduino_FreeRTOS.h>
-// struct can_frame canMsg;
-// MCP2515 mcp2515;
-
->>>>>>> 6c75ee2a (can is bussing)
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> sensorCAN;
 
 uint8_t throttle1Pin = A7;
@@ -95,12 +86,12 @@ static THD_FUNCTION(key, arg) {
 }
 
 void chSetup(){
-  // chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, throttle1, NULL);
-  // chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, throttle2, NULL);
-  // chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, brake, NULL);
+  chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, throttle1, NULL);
+  chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, throttle2, NULL);
+  chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, brake, NULL);
   chThdCreateStatic(waThread4, sizeof(waThread4), NORMALPRIO, send, NULL);
-  // chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, ts, NULL);
-  // chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, key, NULL);
+  chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, ts, NULL);
+  chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, key, NULL);
 }
 
 
@@ -122,11 +113,6 @@ void setup()
   // pinMode(throttle2Pin, INPUT);
   // pinMode(tsSwitchPin, INPUT);
   // pinMode(pushButtonPin, INPUT);
-<<<<<<< HEAD
-=======
-
-  chBegin(&chSetup);
->>>>>>> 6c75ee2a (can is bussing)
 
   chBegin(&chSetup);
 
