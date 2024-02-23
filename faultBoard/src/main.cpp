@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ChRt.h>
+#include <FlexCAN_T4.h>
 #include "pcc.h"
 
 enum State
@@ -10,6 +11,16 @@ enum State
   DRIVING,
   FAULT
 };
+
+struct sensorValues {
+  uint16_t throttle1Value;
+  uint16_t throttle2Value;
+  uint16_t brakeValue;
+  uint8_t tsValue;
+  bool keyValue;
+};
+
+sensorValues data;
 
 String stateNames[] = {"STANDBY", "TRACTIVE_SYSTEM_ACTIVE", "READY_TO_DRIVE", "DRIVING", "FAULT"};
 
@@ -26,6 +37,7 @@ uint8_t MCPin = 3;
 uint8_t throttlePin = A9;
 uint8_t buzzerPin = 4;
 uint8_t lm331Pin = 0;
+uint8_t relayPin = 22;
 
 uint16_t throttle1 = 0;
 uint16_t throttle2 = 0;
@@ -47,6 +59,8 @@ State CURR_STATE = STANDBY;
 uint8_t appsFault = 0;
 uint8_t bseFault = 0;
 uint8_t appsPlausFault = 0;
+
+FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> faultCAN;
 
 static THD_WORKING_AREA(waThread1, 64);
 
@@ -161,8 +175,24 @@ static THD_WORKING_AREA(waThread4, 64);
 static THD_FUNCTION(read, arg)
 {
   (void)arg;
-  while (true)
-  {
+  while(true){
+    digitalWrite(relayPin, HIGH);
+  }
+  // CAN_message_t msg;
+  // while (true){
+  //   if (faultCAN.read(msg) && msg.id == 0x036){
+  //     // Serial.println("receiving!");
+  //     memcpy(&data, msg.buf, sizeof(data));
+  //     Serial.print(data.throttle1Value * 100 / POT_MAX);
+  //     Serial.print("% throttle2: ");
+  //     Serial.print(data.throttle2Value * 100 / POT_MAX);
+  //     Serial.print("% brake value: ");
+  //     Serial.print(map_value(POT_MAX, 5, data.brakeValue));
+  //     Serial.print(" current state: ");
+  //     Serial.println(stateNames[CURR_STATE]);
+  //   }
+  // }
+
     // if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
     // {
     //   throttle1 = (uint16_t)canMsg.data[0] << 8 | canMsg.data[1];
@@ -179,7 +209,6 @@ static THD_FUNCTION(read, arg)
     //   Serial.print(" current state: ");
     //   Serial.println(stateNames[CURR_STATE]);
     // }
-  }
 }
 
 static THD_WORKING_AREA(waThread5, 64);
@@ -261,31 +290,32 @@ static THD_FUNCTION(pcc, arg){
 void chSetup()
 {
   // Start threads.
-  chThdCreateStatic(waThread1, sizeof(waThread1),
-                    NORMALPRIO, throttleCheck, NULL);
-
-  chThdCreateStatic(waThread2, sizeof(waThread2),
-                    NORMALPRIO, brakeCheck, NULL);
-
-  chThdCreateStatic(waThread3, sizeof(waThread3),
-                    NORMALPRIO, rtd, NULL);
-
-  // chThdCreateStatic(waThread4, sizeof(waThread4),
-  //                   NORMALPRIO, read, NULL);
-
-  // chThdCreateStatic(waThread5, sizeof(waThread5),
-  //                   NORMALPRIO, write, NULL);
-
-  chThdCreateStatic(waThread6, sizeof(waThread6),
-                    NORMALPRIO, appsPlaus, NULL);
-
-  // chThdCreateStatic(waThread7, sizeof(waThread7),
-  //                   NORMALPRIO+1, pcc, NULL);
+  // chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, throttleCheck, NULL);
+  // chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, brakeCheck, NULL);
+  // chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, rtd, NULL);
+  chThdCreateStatic(waThread4, sizeof(waThread4), NORMALPRIO, read, NULL);
+  // chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, write, NULL);
+  // chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, appsPlaus, NULL);
+  // chThdCreateStatic(waThread7, sizeof(waThread7), NORMALPRIO+1, pcc, NULL);
 }
 
 void setup()
 {
   Serial.begin(9600);
+
+  // CANFD_timings_t config;
+  // config.clock = CLK_24MHz;
+  // config.baudrate = 1000000;
+  // config.baudrateFD = 2000000;
+  // config.propdelay = 190;
+  // config.bus_length = 1;
+  // config.sample = 70;
+  faultCAN.begin();
+  faultCAN.setBaudRate(250000);
+
+
+  chBegin(&chSetup);
+
   // SPI.begin(); // Begins SPI communication
 
   // mcp2515.init(10);
@@ -299,11 +329,6 @@ void setup()
   // pinMode(throttlePin, OUTPUT);
   // pinMode(buzzerPin, OUTPUT);
   // pinMode(lm331Pin, INPUT);
-
-      Serial.println("apps plaus");
-  chBegin(&chSetup);
-
-
 }
 
 // FAULT BOARD
