@@ -37,6 +37,7 @@ uint8_t MCPin = 3;
 uint8_t throttlePin = A9;
 uint8_t buzzerPin = 4;
 uint8_t lm331Pin = 0;
+uint8_t relayPin = 22;
 
 uint16_t throttle1 = 0;
 uint16_t throttle2 = 0;
@@ -174,20 +175,23 @@ static THD_WORKING_AREA(waThread4, 64);
 static THD_FUNCTION(read, arg)
 {
   (void)arg;
-  CAN_message_t msg;
-  while (true){
-    if (faultCAN.read(msg) && msg.id == 0x036){
-      // Serial.println("receiving!");
-      memcpy(&data, msg.buf, sizeof(data));
-      Serial.print(data.throttle1Value * 100 / POT_MAX);
-      Serial.print("% throttle2: ");
-      Serial.print(data.throttle2Value * 100 / POT_MAX);
-      Serial.print("% brake value: ");
-      Serial.print(map_value(POT_MAX, 5, data.brakeValue));
-      Serial.print(" current state: ");
-      Serial.println(stateNames[CURR_STATE]);
-    }
+  while(true){
+    digitalWrite(relayPin, HIGH);
   }
+  // CAN_message_t msg;
+  // while (true){
+  //   if (faultCAN.read(msg) && msg.id == 0x036){
+  //     // Serial.println("receiving!");
+  //     memcpy(&data, msg.buf, sizeof(data));
+  //     Serial.print(data.throttle1Value * 100 / POT_MAX);
+  //     Serial.print("% throttle2: ");
+  //     Serial.print(data.throttle2Value * 100 / POT_MAX);
+  //     Serial.print("% brake value: ");
+  //     Serial.print(map_value(POT_MAX, 5, data.brakeValue));
+  //     Serial.print(" current state: ");
+  //     Serial.println(stateNames[CURR_STATE]);
+  //   }
+  // }
 
     // if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
     // {
