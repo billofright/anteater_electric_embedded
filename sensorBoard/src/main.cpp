@@ -2,7 +2,7 @@
 #include <ChRt.h>
 #include <FlexCAN_T4.h>
 
-FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> sensorCAN;
+FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> sensorCAN;
 
 uint8_t throttle1Pin = A7;
 uint8_t throttle2Pin = A6;
