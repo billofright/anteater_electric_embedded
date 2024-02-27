@@ -44,17 +44,43 @@ static THD_FUNCTION(brake, arg) {
   }
 }
 
+void canSniff(const CAN_message_t &msg) {
+  // Serial.print("MB "); Serial.print(msg.mb);
+  // Serial.print("  OVERRUN: "); Serial.print(msg.flags.overrun);
+  // Serial.print("  LEN: "); Serial.print(msg.len);
+  // Serial.print(" EXT: "); Serial.print(msg.flags.extended);
+  // Serial.print(" TS: "); Serial.print(msg.timestamp);
+  // Serial.print(" ID: "); Serial.print(msg.id, HEX);
+  // Serial.print(" Buffer: ");
+  // for ( uint8_t i = 0; i < msg.len; i++ ) {
+  //   Serial.print(msg.buf[i], HEX); Serial.print(" ");
+  // } Serial.println();
+  uint16_t rpm = (msg.buf[2] << 8) | msg.buf[1];
+  Serial.print("RPM : "); 
+  Serial.println(rpm);
+}
+
 static THD_WORKING_AREA(waThread4, 64);
 static THD_FUNCTION(send, arg) {
   (void)arg;
   CAN_message_t msg;
   while (true) {
-    msg.id = 0x036;
-    msg.len = 8;
-    memcpy(msg.buf, &sensorVals, sizeof(sensorVals));
-    sensorCAN.write(msg);
+    // msg.id = 0x036;
+    // msg.len = 8;
+    // memcpy(msg.buf, &sensorVals, sizeof(sensorVals));
+    // sensorCAN.write(msg);
 
-    delay(100);
+    // delay(100);
+    // Serial.print("Hello ");
+    msg.flags.extended = 1;
+    msg.id = 0x0CF11E05;
+    msg.len = 8;
+    sensorCAN.write(msg);
+    // Serial.print("After write ");
+    sensorCAN.onReceive(canSniff);
+    // Serial.print("After recieve ");
+    delay(1000);
+
   }
 }
 
@@ -86,12 +112,12 @@ static THD_FUNCTION(key, arg) {
 }
 
 void chSetup(){
-  chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, throttle1, NULL);
-  chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, throttle2, NULL);
-  chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, brake, NULL);
+  // chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, throttle1, NULL);
+  // chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, throttle2, NULL);
+  // chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, brake, NULL);
   chThdCreateStatic(waThread4, sizeof(waThread4), NORMALPRIO, send, NULL);
-  chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, ts, NULL);
-  chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, key, NULL);
+  // chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, ts, NULL);
+  // chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, key, NULL);
 }
 
 
@@ -109,6 +135,8 @@ void setup()
   // sensorCAN.setBaudRate(config);
   sensorCAN.begin();
   sensorCAN.setBaudRate(250000);
+  sensorCAN.enableFIFO();
+  sensorCAN.enableFIFOInterrupt();
   // pinMode(throttle1Pin, INPUT);
   // pinMode(throttle2Pin, INPUT);
   // pinMode(tsSwitchPin, INPUT);
