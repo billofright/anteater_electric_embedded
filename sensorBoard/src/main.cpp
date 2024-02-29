@@ -55,9 +55,19 @@ void canSniff(const CAN_message_t &msg) {
   // for ( uint8_t i = 0; i < msg.len; i++ ) {
   //   Serial.print(msg.buf[i], HEX); Serial.print(" ");
   // } Serial.println();
-  uint16_t rpm = (msg.buf[2] << 8) | msg.buf[1];
-  Serial.print("RPM : "); 
-  Serial.println(rpm);
+  // delay(1000);
+  // uint16_t rpm = (msg.buf[1] << 8) | msg.buf[0];
+  // Serial.print("RPM : "); 
+  // Serial.println(rpm);
+
+  uint16_t current = ((msg.buf[3] << 8) | msg.buf[2]) /10;
+  Serial.print("Current : "); 
+  Serial.println(current);
+
+  // uint16_t voltage = ((msg.buf[5] << 8) | msg.buf[4]) /10;
+  // Serial.print("Voltage : "); 
+  // Serial.println(voltage);
+  
 }
 
 static THD_WORKING_AREA(waThread4, 64);
@@ -65,6 +75,7 @@ static THD_FUNCTION(send, arg) {
   (void)arg;
   CAN_message_t msg;
   while (true) {
+    
     // msg.id = 0x036;
     // msg.len = 8;
     // memcpy(msg.buf, &sensorVals, sizeof(sensorVals));
@@ -79,7 +90,7 @@ static THD_FUNCTION(send, arg) {
     // Serial.print("After write ");
     sensorCAN.onReceive(canSniff);
     // Serial.print("After recieve ");
-    delay(1000);
+    
 
   }
 }
