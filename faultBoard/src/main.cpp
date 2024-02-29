@@ -36,7 +36,7 @@ const uint16_t POT_MAX = 1023;
 uint8_t MCPin = 3;
 uint8_t throttlePin = A9;
 uint8_t buzzerPin = 4;
-uint8_t lm331Pin = 0;
+uint8_t lm331Pin = 11;
 uint8_t relayPin = 22;
 
 uint16_t throttle1 = 0;
@@ -175,9 +175,7 @@ static THD_WORKING_AREA(waThread4, 64);
 static THD_FUNCTION(read, arg)
 {
   (void)arg;
-  while(true){
-    digitalWrite(relayPin, HIGH);
-  }
+
   // CAN_message_t msg;
   // while (true){
   //   if (faultCAN.read(msg) && msg.id == 0x036){
@@ -280,10 +278,16 @@ static THD_WORKING_AREA(waThread7, 64);
 
 static THD_FUNCTION(pcc, arg){
   (void)arg;
-  while(true){
-    double v = getVoltage(lm331Pin);
-    Serial.println(v);
-  }
+  // while(true){
+    // digitalWrite(relayPin, HIGH);
+    // delay(3000);
+    // digitalWrite(relayPin, LOW);
+    // delay(3000);
+    // double v = getVoltage(lm331Pin);
+    // Serial.println(v);
+    // delay(100);
+  // }
+  for(int i = 0; i < 10; i++) prechargeSequenceTest(lm331Pin, relayPin);
 }
 
 
@@ -293,15 +297,20 @@ void chSetup()
   // chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, throttleCheck, NULL);
   // chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, brakeCheck, NULL);
   // chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, rtd, NULL);
-  chThdCreateStatic(waThread4, sizeof(waThread4), NORMALPRIO, read, NULL);
+  // chThdCreateStatic(waThread4, sizeof(waThread4), NORMALPRIO, read, NULL);
   // chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, write, NULL);
   // chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, appsPlaus, NULL);
-  // chThdCreateStatic(waThread7, sizeof(waThread7), NORMALPRIO+1, pcc, NULL);
+  chThdCreateStatic(waThread7, sizeof(waThread7), NORMALPRIO+1, pcc, NULL);
 }
 
 void setup()
 {
   Serial.begin(9600);
+  pinMode(MCPin, OUTPUT);
+  digitalWrite(MCPin, MC);
+  pinMode(throttlePin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+  pinMode(lm331Pin, INPUT);
 
   // CANFD_timings_t config;
   // config.clock = CLK_24MHz;
@@ -312,23 +321,8 @@ void setup()
   // config.sample = 70;
   faultCAN.begin();
   faultCAN.setBaudRate(250000);
-
-
   chBegin(&chSetup);
 
-  // SPI.begin(); // Begins SPI communication
-
-  // mcp2515.init(10);
-
-  // mcp2515.reset();
-  // mcp2515.setBitrate(CAN_125KBPS);
-  // mcp2515.setNormalMode();
-
-  // pinMode(MCPin, OUTPUT);
-  // digitalWrite(MCPin, MC);
-  // pinMode(throttlePin, OUTPUT);
-  // pinMode(buzzerPin, OUTPUT);
-  // pinMode(lm331Pin, INPUT);
 }
 
 // FAULT BOARD

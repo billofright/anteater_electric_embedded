@@ -1,4 +1,4 @@
-#include <pcc.h>
+#include "pcc.h"
 
 double getVoltage(uint8_t pin)
 {
@@ -12,9 +12,8 @@ double getVoltage(uint8_t pin)
 
 double getFrequency(uint8_t pin)
 {
-    const u_int16_t TIMEOUT = 0;
-    uint16_t tHigh = pulseIn(pin, HIGH, TIMEOUT);
-    uint16_t tLow = pulseIn(pin, LOW, TIMEOUT);
+    uint16_t tHigh = pulseIn(pin, HIGH);
+    uint16_t tLow = pulseIn(pin, LOW);
     if (tHigh == 0 || tLow == 0){
       return 0;
     }
@@ -40,4 +39,32 @@ uint8_t prechargeSequence(uint8_t tsVoltagePin, uint8_t accVoltagePin, uint8_t p
         digitalWrite(prechargeRelayPin, LOW);
         return 0;
     }
+}
+
+uint8_t prechargeSequenceTest(uint8_t tsVoltagePin, uint8_t prechargeRelayPin)
+{
+    delay(5000);
+    digitalWrite(prechargeRelayPin, HIGH);
+    delay(1);
+    uint32_t start = millis();
+    double currV = getVoltage(tsVoltagePin);
+    int duration = 1;
+    while(currV < 5.4){
+        Serial.print("voltage at ");
+        Serial.print(duration += 100);
+        Serial.print("ms: ");
+        Serial.println(currV);
+        currV = getVoltage(tsVoltagePin);
+        delay(100);
+    }
+    digitalWrite(prechargeRelayPin, LOW);
+    Serial.print("duration: ");
+    Serial.println((millis() - start)/1000.0);
+    // uint32_t duration = millis() - start;
+    // Serial.println(duration);
+    // if(duration > PRECHARGE_TIME - PRECHARGE_TIME_RANGE && duration < PRECHARGE_TIME + PRECHARGE_TIME_RANGE){
+    //     digitalWrite(prechargeRelayPin, HIGH);
+    //     return 1;
+    // }
+    return 1;
 }
