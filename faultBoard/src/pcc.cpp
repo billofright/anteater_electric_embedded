@@ -41,30 +41,34 @@ uint8_t prechargeSequence(uint8_t tsVoltagePin, uint8_t accVoltagePin, uint8_t p
     }
 }
 
-uint8_t prechargeSequenceTest(uint8_t tsVoltagePin, uint8_t prechargeRelayPin)
+uint8_t prechargeSequenceTest(uint8_t tsVoltagePin, uint8_t prechargeRelayPin, uint8_t bPosRelayPin)
 {
-    delay(5000);
+    delay(3000);
     digitalWrite(prechargeRelayPin, HIGH);
     delay(1);
     uint32_t start = millis();
     double currV = getVoltage(tsVoltagePin);
-    int duration = 1;
-    while(currV < 5.4){
+    int currTime = 1;
+    while(currV < 5.3){
+        if(millis() - start > 2000) break;
         Serial.print("voltage at ");
-        Serial.print(duration += 100);
+        Serial.print(currTime += 100);
         Serial.print("ms: ");
         Serial.println(currV);
         currV = getVoltage(tsVoltagePin);
         delay(100);
     }
-    digitalWrite(prechargeRelayPin, LOW);
-    Serial.print("duration: ");
-    Serial.println((millis() - start)/1000.0);
-    // uint32_t duration = millis() - start;
-    // Serial.println(duration);
-    // if(duration > PRECHARGE_TIME - PRECHARGE_TIME_RANGE && duration < PRECHARGE_TIME + PRECHARGE_TIME_RANGE){
-    //     digitalWrite(prechargeRelayPin, HIGH);
-    //     return 1;
-    // }
-    return 1;
+    uint32_t duration = millis() - start;
+    Serial.println(duration/1000.0);
+    if(duration <= 2000 && duration >= 1000){
+        digitalWrite(bPosRelayPin, HIGH);
+        delay(100);
+        digitalWrite(prechargeRelayPin, LOW);
+        return 1;
+    }
+    else{
+        Serial.println("Error!");
+        digitalWrite(prechargeRelayPin, LOW);
+        return 0;
+    }
 }

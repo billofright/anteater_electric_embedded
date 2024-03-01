@@ -36,8 +36,12 @@ const uint16_t POT_MAX = 1023;
 uint8_t MCPin = 3;
 uint8_t throttlePin = A9;
 uint8_t buzzerPin = 4;
-uint8_t lm331Pin = 11;
-uint8_t relayPin = 22;
+
+uint8_t tsVoltagePin = 9;
+uint8_t accVoltagePin = 10;
+
+uint8_t prechargeRelayPin = 11;
+uint8_t bPosRelayPin = 22;
 
 uint16_t throttle1 = 0;
 uint16_t throttle2 = 0;
@@ -279,15 +283,29 @@ static THD_WORKING_AREA(waThread7, 64);
 static THD_FUNCTION(pcc, arg){
   (void)arg;
   // while(true){
-    // digitalWrite(relayPin, HIGH);
-    // delay(3000);
-    // digitalWrite(relayPin, LOW);
-    // delay(3000);
-    // double v = getVoltage(lm331Pin);
-    // Serial.println(v);
-    // delay(100);
+  //   digitalWrite(prechargeRelayPin, HIGH);
+  //   delay(100);
+  //   digitalWrite(bPosRelayPin, HIGH);
+  //   delay(100);
+  //   digitalWrite(prechargeRelayPin, LOW);
+  //   delay(100);
+  //   digitalWrite(prechargeRelayPin, HIGH);
+  //   delay(100);
+  //   digitalWrite(bPosRelayPin, LOW);
+  //   delay(100);
+  //   digitalWrite(prechargeRelayPin, LOW);
+  //   delay(100);
+  //   digitalWrite(bPosRelayPin, HIGH);
+  //   delay(100);
+  //   digitalWrite(bPosRelayPin, LOW);
+  //   delay(100);
   // }
-  for(int i = 0; i < 10; i++) prechargeSequenceTest(lm331Pin, relayPin);
+  for(int i = 0; i < 10; i++) {
+    digitalWrite(prechargeRelayPin, LOW);
+    digitalWrite(bPosRelayPin, LOW);
+    prechargeSequenceTest(tsVoltagePin, prechargeRelayPin, bPosRelayPin);
+  }
+  // prechargeSequence(tsVoltagePin, accVoltagePin, prechargeRelayPin, bPosRelayPin);
 }
 
 
@@ -310,7 +328,9 @@ void setup()
   digitalWrite(MCPin, MC);
   pinMode(throttlePin, OUTPUT);
   pinMode(buzzerPin, OUTPUT);
-  pinMode(lm331Pin, INPUT);
+  pinMode(tsVoltagePin, INPUT);
+  pinMode(prechargeRelayPin, OUTPUT);
+  pinMode(bPosRelayPin, OUTPUT);
 
   // CANFD_timings_t config;
   // config.clock = CLK_24MHz;
