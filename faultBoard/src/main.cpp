@@ -37,11 +37,11 @@ uint8_t MCPin = 3;
 uint8_t throttlePin = A9;
 uint8_t buzzerPin = 4;
 
-uint8_t tsVoltagePin = 9;
-uint8_t accVoltagePin = 10;
+uint8_t tsVoltagePin = 23;
+uint8_t accVoltagePin = 22;
 
-uint8_t prechargeRelayPin = 11;
-uint8_t bPosRelayPin = 22;
+uint8_t prechargeRelayPin = 12;
+uint8_t bPosRelayPin = 13;
 
 uint16_t throttle1 = 0;
 uint16_t throttle2 = 0;
@@ -282,29 +282,29 @@ static THD_WORKING_AREA(waThread7, 64);
 
 static THD_FUNCTION(pcc, arg){
   (void)arg;
-  // while(true){
-  //   digitalWrite(prechargeRelayPin, HIGH);
-  //   delay(100);
-  //   digitalWrite(bPosRelayPin, HIGH);
-  //   delay(100);
-  //   digitalWrite(prechargeRelayPin, LOW);
-  //   delay(100);
-  //   digitalWrite(prechargeRelayPin, HIGH);
-  //   delay(100);
-  //   digitalWrite(bPosRelayPin, LOW);
-  //   delay(100);
-  //   digitalWrite(prechargeRelayPin, LOW);
-  //   delay(100);
-  //   digitalWrite(bPosRelayPin, HIGH);
-  //   delay(100);
-  //   digitalWrite(bPosRelayPin, LOW);
-  //   delay(100);
-  // }
-  for(int i = 0; i < 10; i++) {
+  while(true){
+    digitalWrite(prechargeRelayPin, HIGH);
+    delay(100);
+    digitalWrite(bPosRelayPin, HIGH);
+    delay(100);
     digitalWrite(prechargeRelayPin, LOW);
+    delay(100);
+    digitalWrite(prechargeRelayPin, HIGH);
+    delay(100);
     digitalWrite(bPosRelayPin, LOW);
-    prechargeSequenceTest(tsVoltagePin, prechargeRelayPin, bPosRelayPin);
+    delay(100);
+    digitalWrite(prechargeRelayPin, LOW);
+    delay(100);
+    digitalWrite(bPosRelayPin, HIGH);
+    delay(100);
+    digitalWrite(bPosRelayPin, LOW);
+    delay(100);
   }
+  // for(int i = 0; i < 10; i++) {
+  //   digitalWrite(prechargeRelayPin, LOW);
+  //   digitalWrite(bPosRelayPin, LOW);
+  //   prechargeSequenceTest(tsVoltagePin, prechargeRelayPin, bPosRelayPin);
+  // }
   // prechargeSequence(tsVoltagePin, accVoltagePin, prechargeRelayPin, bPosRelayPin);
 }
 
@@ -329,6 +329,7 @@ void setup()
   pinMode(throttlePin, OUTPUT);
   pinMode(buzzerPin, OUTPUT);
   pinMode(tsVoltagePin, INPUT);
+  pinMode(accVoltagePin, INPUT);
   pinMode(prechargeRelayPin, OUTPUT);
   pinMode(bPosRelayPin, OUTPUT);
 
