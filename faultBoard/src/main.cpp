@@ -6,6 +6,7 @@
 enum State
 {
   STANDBY,
+  PRECHARGING,
   TRACTIVE_SYSTEM_ACTIVE,
   READY_TO_DRIVE,
   DRIVING,
@@ -37,11 +38,13 @@ uint8_t MCPin = 3;
 uint8_t throttlePin = A9;
 uint8_t buzzerPin = 4;
 
-uint8_t tsVoltagePin = 23;
-uint8_t accVoltagePin = 22;
+uint8_t tsVoltagePin = 22;
+uint8_t accVoltagePin = 23;
 
 uint8_t prechargeRelayPin = 12;
 uint8_t bPosRelayPin = 13;
+
+uint8_t prechargeSwitch = 0;
 
 uint16_t throttle1 = 0;
 uint16_t throttle2 = 0;
@@ -282,30 +285,65 @@ static THD_WORKING_AREA(waThread7, 64);
 
 static THD_FUNCTION(pcc, arg){
   (void)arg;
-  while(true){
-    digitalWrite(prechargeRelayPin, HIGH);
-    delay(100);
-    digitalWrite(bPosRelayPin, HIGH);
-    delay(100);
-    digitalWrite(prechargeRelayPin, LOW);
-    delay(100);
-    digitalWrite(prechargeRelayPin, HIGH);
-    delay(100);
-    digitalWrite(bPosRelayPin, LOW);
-    delay(100);
-    digitalWrite(prechargeRelayPin, LOW);
-    delay(100);
-    digitalWrite(bPosRelayPin, HIGH);
-    delay(100);
-    digitalWrite(bPosRelayPin, LOW);
-    delay(100);
-  }
-  // for(int i = 0; i < 10; i++) {
+  // while(true){
+  //   digitalWrite(prechargeRelayPin, HIGH);
+  //   delay(100);
+  //   digitalWrite(bPosRelayPin, HIGH);
+  //   delay(100);
   //   digitalWrite(prechargeRelayPin, LOW);
+  //   delay(100);
+  //   digitalWrite(prechargeRelayPin, HIGH);
+  //   delay(100);
   //   digitalWrite(bPosRelayPin, LOW);
-  //   prechargeSequenceTest(tsVoltagePin, prechargeRelayPin, bPosRelayPin);
+  //   delay(100);
+  //   digitalWrite(prechargeRelayPin, LOW);
+  //   delay(100);
+  //   digitalWrite(bPosRelayPin, HIGH);
+  //   delay(100);
+  //   digitalWrite(bPosRelayPin, LOW);
+  //   delay(100);
   // }
-  // prechargeSequence(tsVoltagePin, accVoltagePin, prechargeRelayPin, bPosRelayPin);
+  while(true){
+    int switchVal = digitalRead(prechargeSwitch);
+    if(CURR_STATE == FAULT && switchVal == LOW){
+      CURR_STATE = STANDBY;
+      delay(1000); //debounce kinda
+    }
+    else if(CURR_STATE == STANDBY && switchVal == HIGH){
+      CURR_STATE = PRECHARGING;
+      int status = prechargeSequence(tsVoltagePin, accVoltagePin, prechargeRelayPin, bPosRelayPin);
+      if(status){
+        CURR_STATE = TRACTIVE_SYSTEM_ACTIVE;
+        digitalWrite(bPosRelayPin, HIGH);
+        delay(200);
+        digitalWrite(prechargeRelayPin, LOW);
+      }
+      else{
+        CURR_STATE = FAULT;
+        digitalWrite(prechargeRelayPin, LOW);
+        digitalWrite(bPosRelayPin, LOW);
+      }
+      delay(1000);
+    }
+    else if(CURR_STATE == TRACTIVE_SYSTEM_ACTIVE && switchVal == LOW){
+      CURR_STATE = STANDBY;
+      digitalWrite(prechargeRelayPin, LOW);
+      digitalWrite(bPosRelayPin, LOW);
+      delay(1000);
+    }
+  }
+  // int state = prechargeSequence(tsVoltagePin, accVoltagePin, prechargeRelayPin, bPosRelayPin);
+  // while(true){
+  //   if(state){
+  //       digitalWrite(bPosRelayPin, HIGH);
+  //       delay(200);
+  //       digitalWrite(prechargeRelayPin, LOW);
+  //   }
+  //   else{
+  //       digitalWrite(prechargeRelayPin, LOW);
+  //       digitalWrite(bPosRelayPin, LOW);
+  //   }
+  // }
 }
 
 
@@ -315,7 +353,7 @@ void chSetup()
   // chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, throttleCheck, NULL);
   // chThdCreateStatic(waThread2, sizeof(waThread2), NORMALPRIO, brakeCheck, NULL);
   // chThdCreateStatic(waThread3, sizeof(waThread3), NORMALPRIO, rtd, NULL);
-  // chThdCreateStatic(waThread4, sizeof(waThread4), NORMALPRIO, read, NULL);
+  chThdCreateStatic(waThread4, sizeof(waThread4), NORMALPRIO, read, NULL);
   // chThdCreateStatic(waThread5, sizeof(waThread5), NORMALPRIO, write, NULL);
   // chThdCreateStatic(waThread6, sizeof(waThread6), NORMALPRIO, appsPlaus, NULL);
   chThdCreateStatic(waThread7, sizeof(waThread7), NORMALPRIO+1, pcc, NULL);
@@ -332,6 +370,13 @@ void setup()
   pinMode(accVoltagePin, INPUT);
   pinMode(prechargeRelayPin, OUTPUT);
   pinMode(bPosRelayPin, OUTPUT);
+  pinMode(prechargeSwitch, INPUT);
+
+  if(digitalRead(prechargeSwitch) == HIGH){
+    CURR_STATE = FAULT; // to ensure that the precharge sequence is not run right as power is provided
+    digitalWrite(prechargeRelayPin, LOW);
+    digitalWrite(bPosRelayPin, LOW);
+  }
 
   // CANFD_timings_t config;
   // config.clock = CLK_24MHz;
