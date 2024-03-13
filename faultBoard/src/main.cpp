@@ -285,24 +285,6 @@ static THD_WORKING_AREA(waThread7, 64);
 
 static THD_FUNCTION(pcc, arg){
   (void)arg;
-  // while(true){
-  //   digitalWrite(prechargeRelayPin, HIGH);
-  //   delay(100);
-  //   digitalWrite(bPosRelayPin, HIGH);
-  //   delay(100);
-  //   digitalWrite(prechargeRelayPin, LOW);
-  //   delay(100);
-  //   digitalWrite(prechargeRelayPin, HIGH);
-  //   delay(100);
-  //   digitalWrite(bPosRelayPin, LOW);
-  //   delay(100);
-  //   digitalWrite(prechargeRelayPin, LOW);
-  //   delay(100);
-  //   digitalWrite(bPosRelayPin, HIGH);
-  //   delay(100);
-  //   digitalWrite(bPosRelayPin, LOW);
-  //   delay(100);
-  // }
   while(true){
     int switchVal = digitalRead(prechargeSwitch);
     if(CURR_STATE == FAULT && switchVal == LOW){
@@ -332,18 +314,8 @@ static THD_FUNCTION(pcc, arg){
       delay(1000);
     }
   }
-  // int state = prechargeSequence(tsVoltagePin, accVoltagePin, prechargeRelayPin, bPosRelayPin);
-  // while(true){
-  //   if(state){
-  //       digitalWrite(bPosRelayPin, HIGH);
-  //       delay(200);
-  //       digitalWrite(prechargeRelayPin, LOW);
-  //   }
-  //   else{
-  //       digitalWrite(prechargeRelayPin, LOW);
-  //       digitalWrite(bPosRelayPin, LOW);
-  //   }
-  // }
+  // for(int i = 0; i < 10; i++) prechargeSequenceTest(tsVoltagePin, accVoltagePin, prechargeRelayPin);
+  // while(true);
 }
 
 

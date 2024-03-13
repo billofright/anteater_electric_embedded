@@ -9,6 +9,6 @@ const uint16_t PRECHARGE_TIME_RANGE = 500;
 double getVoltage(uint8_t pin);
 double getFrequency(uint8_t pin);
 uint8_t prechargeSequence(uint8_t tsVoltagePin, uint8_t accVoltagePin, uint8_t prechargeRelayPin, uint8_t bPosRelayPin);
-uint8_t prechargeSequenceTest(uint8_t tsVoltagePin, uint8_t accVoltagePin, uint8_t prechargeRelayPin, uint8_t bPosRelayPin);
+uint8_t prechargeSequenceTest(uint8_t tsVoltagePin, uint8_t accVoltagePin, uint8_t prechargeRelayPin);
 
 #endif

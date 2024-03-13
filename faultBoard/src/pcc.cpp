@@ -1,8 +1,8 @@
 #include "pcc.h"
 
-const uint16_t PRECHARGE_TIME_LOWER = 2200; // ms
-const uint16_t PRECHARGE_TIME_UPPER = 2800; // ms
-const double PRECHARGE_PERCENTAGE = 0.90;
+const uint16_t PRECHARGE_TIME_LOWER = 700; // ms
+const uint16_t PRECHARGE_TIME_UPPER = 1100; // ms
+const double PRECHARGE_PERCENTAGE = 0.87;
 const uint16_t TIMEOUT = 10000; // us
 
 double getVoltage(uint8_t pin)
@@ -41,14 +41,12 @@ uint8_t prechargeSequence(uint8_t tsVoltagePin, uint8_t accVoltagePin, uint8_t p
     Serial.println(currV);
     // delay(1);
     while(currV <= targetV){
-        // Serial.print("voltage at ");
-        // Serial.print(currTime += 100);
-        // Serial.print("ms: ");
-        // Serial.println(currV);
-        Serial.print("targetV: ");
+        Serial.print(currV);
+        Serial.print(" out of ");
         Serial.print(targetV);
-        Serial.print(" voltage ts: ");
-        Serial.println(currV);
+        Serial.print(" (");
+        Serial.print(currV/targetV*100);
+        Serial.println("%)");
         currV = getVoltage(tsVoltagePin) * 10;
         delay(50);
     }
@@ -61,29 +59,27 @@ uint8_t prechargeSequence(uint8_t tsVoltagePin, uint8_t accVoltagePin, uint8_t p
     }
 }
 
-uint8_t prechargeSequenceTest(uint8_t tsVoltagePin, uint8_t accVoltagePin, uint8_t prechargeRelayPin, uint8_t bPosRelayPin)
+uint8_t prechargeSequenceTest(uint8_t tsVoltagePin, uint8_t accVoltagePin, uint8_t prechargeRelayPin)
 {
-    delay(3000);
-    digitalWrite(bPosRelayPin, LOW);
+    delay(5000);
     digitalWrite(prechargeRelayPin, HIGH);
-    delay(1);
+    delay(50);
     double targetV = getVoltage(accVoltagePin) * 10 * PRECHARGE_PERCENTAGE;
     double currV = getVoltage(tsVoltagePin) * 10;
     uint32_t start = millis();
-    Serial.print("targetV: ");
-    Serial.println(targetV);
     delay(1);
-    while(millis() - start <= 5000){
+    while(currV <= targetV){
         currV = getVoltage(tsVoltagePin) * 10;
-        Serial.print("voltage ts: ");
         Serial.print(currV);
-        Serial.print(" voltage acc: ");
-        Serial.println(getVoltage(accVoltagePin) * 10);
+        Serial.print(" out of ");
+        Serial.print(targetV);
+        Serial.print(" (");
+        Serial.print(currV/targetV*100);
+        Serial.println("%)");
         delay(50);
     }
-    // uint32_t duration = millis() - start;
-    // Serial.println(duration);
-    // digitalWrite(prechargeRelayPin, LOW);
-    // digitalWrite(bPosRelayPin, LOW);
+    uint32_t duration = millis() - start;
+    Serial.println(duration);
+    digitalWrite(prechargeRelayPin, LOW);
     return 1;
 }
