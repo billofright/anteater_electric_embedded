@@ -12,7 +12,8 @@ enum State
   FAULT
 };
 
-struct sensorValues {
+struct sensorValues
+{
   uint16_t throttle1Value;
   uint16_t throttle2Value;
   uint16_t brakeValue;
@@ -62,8 +63,8 @@ uint8_t appsPlausFault = 0;
 
 FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> faultCAN;
 
+// Throttle Check - ensures that both throttle sensors are within 10% of each other
 static THD_WORKING_AREA(waThread1, 64);
-
 static THD_FUNCTION(throttleCheck, arg)
 {
   (void)arg;
@@ -95,8 +96,8 @@ float map_value(uint16_t aMax, uint16_t bMax, float inValue)
   return ((float)bMax / aMax) * (inValue);
 }
 
+// Brake Check - ensures that brake value is between 0.5V - 4.5V
 static THD_WORKING_AREA(waThread2, 64);
-
 static THD_FUNCTION(brakeCheck, arg)
 {
   (void)arg;
@@ -109,8 +110,8 @@ static THD_FUNCTION(brakeCheck, arg)
   }
 }
 
+// State Controller - state flow based on state diagram
 static THD_WORKING_AREA(waThread3, 64);
-
 static THD_FUNCTION(rtd, arg)
 {
   (void)arg;
@@ -170,12 +171,13 @@ static THD_FUNCTION(rtd, arg)
   }
 }
 
+// Read - prints all data coming from sensor board
 static THD_WORKING_AREA(waThread4, 64);
-
 static THD_FUNCTION(read, arg)
 {
   (void)arg;
-  while(true){
+  while (true)
+  {
     digitalWrite(relayPin, HIGH);
   }
   // CAN_message_t msg;
@@ -193,26 +195,26 @@ static THD_FUNCTION(read, arg)
   //   }
   // }
 
-    // if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
-    // {
-    //   throttle1 = (uint16_t)canMsg.data[0] << 8 | canMsg.data[1];
-    //   throttle2 = (uint16_t)canMsg.data[2] << 8 | canMsg.data[3];
-    //   brake = (uint16_t)canMsg.data[4] << 8 | canMsg.data[5];
-    //   tractiveSystemActiveValue = canMsg.data[6];
-    //   keySwitchValue = canMsg.data[7];
-    //   Serial.print("throttle1: ");
-    //   Serial.print(throttle1 * 100 / POT_MAX);
-    //   Serial.print("% throttle2: ");
-    //   Serial.print(throttle2 * 100 / POT_MAX);
-    //   Serial.print("% brake value: ");
-    //   Serial.print(map_value(POT_MAX, 5, brake));
-    //   Serial.print(" current state: ");
-    //   Serial.println(stateNames[CURR_STATE]);
-    // }
+  // if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
+  // {
+  //   throttle1 = (uint16_t)canMsg.data[0] << 8 | canMsg.data[1];
+  //   throttle2 = (uint16_t)canMsg.data[2] << 8 | canMsg.data[3];
+  //   brake = (uint16_t)canMsg.data[4] << 8 | canMsg.data[5];
+  //   tractiveSystemActiveValue = canMsg.data[6];
+  //   keySwitchValue = canMsg.data[7];
+  //   Serial.print("throttle1: ");
+  //   Serial.print(throttle1 * 100 / POT_MAX);
+  //   Serial.print("% throttle2: ");
+  //   Serial.print(throttle2 * 100 / POT_MAX);
+  //   Serial.print("% brake value: ");
+  //   Serial.print(map_value(POT_MAX, 5, brake));
+  //   Serial.print(" current state: ");
+  //   Serial.println(stateNames[CURR_STATE]);
+  // }
 }
 
+// Fault State Controller - checks if any fault state is active and shuts off MC and Throttle output
 static THD_WORKING_AREA(waThread5, 64);
-
 static THD_FUNCTION(write, arg)
 {
   (void)arg;
@@ -258,8 +260,8 @@ static THD_FUNCTION(write, arg)
   }
 }
 
+// APPS Plaus - ensures that throttle and brake are not above 25% and 10% respectively
 static THD_WORKING_AREA(waThread6, 64);
-
 static THD_FUNCTION(appsPlaus, arg)
 {
   (void)arg;
@@ -277,15 +279,15 @@ static THD_FUNCTION(appsPlaus, arg)
 }
 
 static THD_WORKING_AREA(waThread7, 64);
-
-static THD_FUNCTION(pcc, arg){
+static THD_FUNCTION(pcc, arg)
+{
   (void)arg;
-  while(true){
+  while (true)
+  {
     double v = getVoltage(lm331Pin);
     Serial.println(v);
   }
 }
-
 
 void chSetup()
 {
@@ -312,7 +314,6 @@ void setup()
   // config.sample = 70;
   faultCAN.begin();
   faultCAN.setBaudRate(250000);
-
 
   chBegin(&chSetup);
 
