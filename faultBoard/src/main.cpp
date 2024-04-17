@@ -195,8 +195,8 @@ static THD_FUNCTION(read, arg)
 
     // if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
     // {
-    //   throttle1 = (uint16_t)canMsg.data[0] << 8 | canMsg.data[1];
-    //   throttle2 = (uint16_t)canMsg.data[2] << 8 | canMsg.data[3];
+    //   throttle1 = (uint16_t)canMsg.data[0] << 8 | canMsg.data[1]; // 0-5
+    // throttle2 = 5 - ((uint16_t)canMsg.data[2] << 8 | canMsg.data[3]); 
     //   brake = (uint16_t)canMsg.data[4] << 8 | canMsg.data[5];
     //   tractiveSystemActiveValue = canMsg.data[6];
     //   keySwitchValue = canMsg.data[7];
