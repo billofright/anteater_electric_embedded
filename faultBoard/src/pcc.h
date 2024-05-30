@@ -16,3 +16,4 @@ double getFrequency(uint8_t pin);
 uint8_t prechargeSequence(uint8_t tsVoltagePin, uint8_t accVoltagePin, uint8_t prechargeRelayPin, uint8_t bPosRelayPin);
 
 #endif
+
